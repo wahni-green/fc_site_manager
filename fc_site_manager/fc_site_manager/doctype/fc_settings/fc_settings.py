@@ -32,7 +32,7 @@ class FCSettings(Document):
 	def get_req_headers(self, team):
 		return {
 			"Authorization": f"Token {self.get_password('api_key')}:{self.get_password('api_secret')}",
-			"X-Press-Team": f"{team}"
+			"X-Press-Team": frappe.get_cached_value("FC Team", team, "team_id"),
 		}
 
 	def get_fc_teams(self):
