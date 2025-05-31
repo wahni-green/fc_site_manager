@@ -37,12 +37,17 @@ class FCSite(Document):
 			cookies={"sid": sid}
 		).json()
 
-		if user_doc.get("exc_type") == "DoesNotExistError":
-			requests.post(
+		# if user_doc.get("exc_type") == "DoesNotExistError":
+		if not user_doc.get("data"):
+			user_creation = requests.post(
 				f"https://{self.site_name}/api/resource/User",
 				cookies={"sid": sid},
 				json=self.generate_user_doc(user)
-			).raise_for_status()
+			)
+			try:
+				user_creation.raise_for_status()
+			except Exception:
+				frappe.throw(user_creation.text)
 
 		random_password = frappe.generate_hash(length=12)
 		requests.put(
@@ -54,22 +59,19 @@ class FCSite(Document):
 		user_login_response = requests.post(
 			f"https://{self.site_name}/api/method/login",
 			json={"usr": user, "pwd": random_password}
-		).raise_for_status()
+		)
+		user_login_response.raise_for_status()
 		return user_login_response.cookies.get_dict().get("sid")
 
 
 	def generate_user_doc(self, username=None):
 		username = username or frappe.session.user
-		user = frappe.get_doc("User", username).as_json()
-		user = frappe.parse_json(user)
-		for key, value in user.items():
-			if isinstance(value, list):
-				user[key] = []
-			if isinstance(value, dict):
-				user[key] = {}
-
-		user["role_profile_name"] = None
-		user["module_profile"] = None
+		user = frappe.db.get_value(
+			"User",
+			username,
+			["name", "email", "first_name", "last_name"],
+			as_dict=True
+		)
 		user["roles"] = [
 			{
                 "idx": 1,
@@ -77,4 +79,3 @@ class FCSite(Document):
             },
 		]
 		return user
-
