@@ -72,6 +72,7 @@ class FCSite(Document):
 			["name", "email", "first_name", "last_name"],
 			as_dict=True
 		)
+		user["send_welcome_email"] = 0
 		user["roles"] = [
 			{
                 "idx": 1,
