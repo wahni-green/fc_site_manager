@@ -10,5 +10,13 @@ frappe.ui.form.on("FC Settings", {
                 frappe.dom.unfreeze();
             }, __("Sync")
         );
+
+        frm.add_custom_button(
+            __("Teams"), async function() {
+                frappe.dom.freeze();
+                await frm.call("get_all_teams");
+                frappe.dom.unfreeze();
+            }, __("Sync")
+        );
 	},
 });

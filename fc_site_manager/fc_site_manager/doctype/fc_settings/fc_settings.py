@@ -46,6 +46,27 @@ class FCSettings(Document):
 		return json.loads(self.user_filter) if self.user_filter else []
 
 	@frappe.whitelist()
+	def get_all_teams(self):
+		headers = self.get_req_headers(self.fc_team_id)
+		response = requests.post(
+			f"{self.base_url}/api/method/press.api.client.get",
+			headers=headers,
+			json={"doctype": "Team", "name": self.fc_team_id}
+		)
+		data = response.json().get("message")
+		for team in data.get("valid_teams"):
+			if frappe.db.exists("FC Team", team.get("user")):
+				continue
+			
+			frappe.get_doc({
+				"doctype": "FC Team",
+				"username": team.get("user"),
+				"team_id": team.get("name"),
+			}).insert(ignore_permissions=True)
+
+		frappe.msgprint(_("All teams have been fetched successfully."))
+
+	@frappe.whitelist()
 	def get_all_sites(self):
 		teams = self.get_fc_teams()
 		for team in teams:
