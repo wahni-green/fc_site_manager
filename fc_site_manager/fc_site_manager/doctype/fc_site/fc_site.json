@@ -7,7 +7,9 @@
  "field_order": [
   "site_name",
   "fc_team",
-  "login_restricted"
+  "login_restricted",
+  "section_break_ozns",
+  "users"
  ],
  "fields": [
   {
@@ -33,12 +35,24 @@
    "fieldtype": "Check",
    "label": "Login Restricted",
    "permlevel": 1
+  },
+  {
+   "fieldname": "section_break_ozns",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "users",
+   "fieldtype": "Table",
+   "label": "Users",
+   "no_copy": 1,
+   "options": "FC Site User",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-31 13:34:10.233117",
+ "modified": "2025-05-31 17:55:47.717466",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Site",

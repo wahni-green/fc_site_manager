@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Wahni IT Solutions Pvt Ltd and contributors
 # For license information, please see license.txt
 
+import json
 import requests
 import frappe
 from frappe import _
@@ -8,6 +9,26 @@ from frappe.model.document import Document
 
 
 class FCSettings(Document):
+	def validate(self):
+		self.validate_filter_json()
+
+	def validate_filter_json(self):
+		if not self.user_filter:
+			self.user_filter = "[]"
+			return
+
+		try:
+			filters = json.loads(self.user_filter)
+			if not isinstance(filters, list):
+				frappe.throw(_("User Filter must be a valid JSON array."))
+			for filter_item in filters:
+				if not isinstance(filter_item, list):
+					frappe.throw(_("Each filter item in User Filter must be a list."))
+				if len(filter_item) != 3:
+					frappe.throw(_("Each filter item in User Filter must contain exactly three elements: [field, operator, value]."))
+		except json.JSONDecodeError:
+			frappe.throw(_("Invalid JSON format in User Filter."))
+
 	def get_req_headers(self, team):
 		return {
 			"Authorization": f"Token {self.get_password('api_key')}:{self.get_password('api_secret')}",
@@ -20,6 +41,9 @@ class FCSettings(Document):
 			filters={"enabled": 1},
 			fields=["name", "team_id"]
 		)
+
+	def get_user_filters(self):
+		return json.loads(self.user_filter) if self.user_filter else []
 
 	@frappe.whitelist()
 	def get_all_sites(self):

@@ -5,10 +5,15 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "settings_section",
   "base_url",
   "column_break_zxcg",
   "api_key",
-  "api_secret"
+  "api_secret",
+  "instance_users_section",
+  "user_filter",
+  "column_break_suai",
+  "fetch_users"
  ],
  "fields": [
   {
@@ -29,13 +34,37 @@
    "fieldname": "api_secret",
    "fieldtype": "Password",
    "label": "API Secret"
+  },
+  {
+   "fieldname": "instance_users_section",
+   "fieldtype": "Section Break",
+   "label": "Instance Users"
+  },
+  {
+   "fieldname": "user_filter",
+   "fieldtype": "JSON",
+   "label": "User FIlter"
+  },
+  {
+   "fieldname": "column_break_suai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fetch_users",
+   "fieldtype": "Button",
+   "label": "Fetch Users"
+  },
+  {
+   "fieldname": "settings_section",
+   "fieldtype": "Section Break",
+   "label": "Settings"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-31 12:10:08.881630",
+ "modified": "2025-05-31 16:59:01.628591",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Settings",

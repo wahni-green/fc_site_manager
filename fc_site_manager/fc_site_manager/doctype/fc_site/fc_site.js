@@ -18,6 +18,22 @@ frappe.ui.form.on("FC Site", {
                     );
                 }
             );
+            if (frappe.user.has_role("System Manager")) {
+                frm.add_custom_button(
+                    __("Fetch Users"), async function () {
+                        frappe.dom.freeze("Fetching users...");
+                        await frm.call("fetch_instance_users");
+                        frappe.dom.unfreeze();
+                    }, __("Tools")
+                );
+                frm.add_custom_button(
+                    __("Disable Users"), async function () {
+                        frappe.dom.freeze("Disabling users...");
+                        await frm.call("disable_instance_users");
+                        frappe.dom.unfreeze();
+                    }, __("Tools")
+                );
+            }
         }
 	},
 });

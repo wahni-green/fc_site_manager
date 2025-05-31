@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Wahni IT Solutions Pvt Ltd and contributors
 # For license information, please see license.txt
 
+import json
 import requests
 import frappe
 from frappe import _
@@ -11,12 +12,10 @@ class FCSite(Document):
 	def get_fc_settings(self):
 		return frappe.get_cached_doc("FC Settings")
 
-	@frappe.whitelist()
-	def login_to_site(self):
+	def login_as_admin(self):
 		if self.login_restricted:
 			frappe.throw(_("Login is restricted for this site."))
-
-		user = frappe.session.user
+		
 		settings = self.get_fc_settings()
 		data = {"name": self.name}
 
@@ -29,13 +28,61 @@ class FCSite(Document):
 		sid = response.json().get("message").get("sid")
 		if not sid:
 			frappe.throw(_("Login failed."))
+		
+		return sid
+
+	@frappe.whitelist()
+	def disable_instance_users(self):
+		frappe.only_for("System Manager")
+		sid = self.login_as_admin()
+
+		for row in self.users:
+			requests.put(
+				f"https://{self.site_name}/api/resource/User/{row.user}",
+				cookies={"sid": sid},
+				json={"enabled": 0}
+			).raise_for_status()
+
+		frappe.msgprint(_("All users have been disabled for this site."))
+
+	@frappe.whitelist()
+	def fetch_instance_users(self):
+		frappe.only_for("System Manager")
+		settings = self.get_fc_settings()
+		sid = self.login_as_admin()
+
+		filters = settings.get_user_filters()
+		filters.append(
+			["name", "!=", "Administrator"]
+		)
+		params = {
+			"fields": json.dumps(["name"]),
+			"filters": json.dumps(filters)
+		}
+		users = requests.get(
+			f"https://{self.site_name}/api/resource/User",
+			cookies={"sid": sid},
+			json=params
+		).json()
+
+		self.set("users", [])
+		for user in users.get("data", []):
+			self.append("users", {"user": user.get("name")})
+		self.save()
+
+	@frappe.whitelist()
+	def login_to_site(self):
+		user = frappe.session.user
+		sid = self.login_as_admin()
+
+		if user == "Administrator":
+			return sid
 
 		user_doc = requests.get(
 			f"https://{self.site_name}/api/resource/User/{user}",
 			cookies={"sid": sid}
 		).json()
 
-		# if user_doc.get("exc_type") == "DoesNotExistError":
 		if not user_doc.get("data"):
 			user_creation = requests.post(
 				f"https://{self.site_name}/api/resource/User",
@@ -46,6 +93,9 @@ class FCSite(Document):
 				user_creation.raise_for_status()
 			except Exception:
 				frappe.throw(user_creation.text)
+			else:
+				self.append("users", {"user": user})
+				self.save()
 
 		random_password = frappe.generate_hash(length=12)
 		requests.put(
