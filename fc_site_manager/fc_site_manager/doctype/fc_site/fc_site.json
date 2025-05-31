@@ -1,0 +1,65 @@
+{
+ "actions": [],
+ "autoname": "field:site_name",
+ "creation": "2025-05-31 12:30:18.110153",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site_name",
+  "fc_team",
+  "login_restricted"
+ ],
+ "fields": [
+  {
+   "fieldname": "site_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Site Name",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "fc_team",
+   "fieldtype": "Link",
+   "label": "FC Team",
+   "options": "FC Team",
+   "read_only_depends_on": "fc_team",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "login_restricted",
+   "fieldtype": "Check",
+   "label": "Login Restricted",
+   "permlevel": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-31 13:34:10.233117",
+ "modified_by": "Administrator",
+ "module": "FC Site Manager",
+ "name": "FC Site",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
