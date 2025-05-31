@@ -7,6 +7,8 @@
  "field_order": [
   "enabled",
   "username",
+  "team_id",
+  "column_break_ynqt",
   "description"
  ],
  "fields": [
@@ -28,12 +30,22 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "column_break_ynqt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team_id",
+   "fieldtype": "Data",
+   "label": "Team ID",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-31 12:21:07.580120",
+ "modified": "2025-05-31 16:51:45.296786",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Team",

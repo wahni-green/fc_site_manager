@@ -18,9 +18,7 @@ class FCSite(Document):
 
 		user = frappe.session.user
 		settings = self.get_fc_settings()
-		data = {
-			"name": self.name,
-		}
+		data = {"name": self.name}
 
 		response = requests.post(
 			f"{settings.base_url}/api/method/press.api.site.login",
@@ -62,7 +60,6 @@ class FCSite(Document):
 		)
 		user_login_response.raise_for_status()
 		return user_login_response.cookies.get_dict().get("sid")
-
 
 	def generate_user_doc(self, username=None):
 		username = username or frappe.session.user

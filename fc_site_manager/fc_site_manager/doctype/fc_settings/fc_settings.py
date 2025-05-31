@@ -18,13 +18,14 @@ class FCSettings(Document):
 		return frappe.db.get_all(
 			"FC Team",
 			filters={"enabled": 1},
+			fields=["name", "team_id"]
 		)
 
 	@frappe.whitelist()
 	def get_all_sites(self):
 		teams = self.get_fc_teams()
 		for team in teams:
-			headers = self.get_req_headers(team.name)
+			headers = self.get_req_headers(team.team_id)
 			response = requests.get(
 				f"{self.base_url}/api/method/press.api.site.all",
 				headers=headers
