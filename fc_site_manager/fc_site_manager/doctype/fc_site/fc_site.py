@@ -48,7 +48,7 @@ class FCSite(Document):
 		requests.put(
 			f"https://{self.site_name}/api/resource/User/{user}",
 			cookies={"sid": sid},
-			json={"new_password": random_password}
+			json={"enabled": 1, "new_password": random_password}
 		).raise_for_status()
 
 		user_login_response = requests.post(
