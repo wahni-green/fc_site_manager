@@ -68,6 +68,8 @@ class FCSite(Document):
 			if isinstance(value, dict):
 				user[key] = {}
 
+		user["role_profile_name"] = None
+		user["module_profile"] = None
 		user["roles"] = [
 			{
                 "idx": 1,
