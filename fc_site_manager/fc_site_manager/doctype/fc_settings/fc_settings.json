@@ -13,7 +13,7 @@
   "instance_users_section",
   "user_filter",
   "column_break_suai",
-  "fetch_users"
+  "fetch_and_disable_users"
  ],
  "fields": [
   {
@@ -50,21 +50,23 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "fetch_users",
-   "fieldtype": "Button",
-   "label": "Fetch Users"
-  },
-  {
    "fieldname": "settings_section",
    "fieldtype": "Section Break",
    "label": "Settings"
+  },
+  {
+   "default": "0",
+   "description": "If enabled, a weekly job will run to fetch users from all instances and disable them as well.",
+   "fieldname": "fetch_and_disable_users",
+   "fieldtype": "Check",
+   "label": "Fetch and Disable Users"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-31 16:59:01.628591",
+ "modified": "2025-05-31 18:34:37.371377",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Settings",

@@ -143,23 +143,11 @@ app_license = "agpl-3.0"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"fc_site_manager.tasks.all"
-# 	],
-# 	"daily": [
-# 		"fc_site_manager.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"fc_site_manager.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"fc_site_manager.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"fc_site_manager.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"weekly": [
+		"fc_site_manager.scheduler.schedule_site_actions"
+	],
+}
 
 # Testing
 # -------
