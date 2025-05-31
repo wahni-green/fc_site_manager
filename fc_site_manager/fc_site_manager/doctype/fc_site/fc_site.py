@@ -42,19 +42,19 @@ class FCSite(Document):
 				f"https://{self.site_name}/api/resource/User",
 				cookies={"sid": sid},
 				json=self.generate_user_doc(user)
-			)
+			).raise_for_status()
 
 		random_password = frappe.generate_hash(length=12)
 		requests.put(
 			f"https://{self.site_name}/api/resource/User/{user}",
 			cookies={"sid": sid},
 			json={"new_password": random_password}
-		)
+		).raise_for_status()
 
 		user_login_response = requests.post(
 			f"https://{self.site_name}/api/method/login",
 			json={"usr": user, "pwd": random_password}
-		)
+		).raise_for_status()
 		return user_login_response.cookies.get_dict().get("sid")
 
 
