@@ -84,6 +84,7 @@ class FCSettings(Document):
 					"doctype": "FC Site",
 					"site_name": site.get("name"),
 					"fc_team": team.name,
+					"login_restricted": 1,
 				}).insert(ignore_permissions=True)
 
 		frappe.msgprint(_("All sites have been fetched successfully."))
