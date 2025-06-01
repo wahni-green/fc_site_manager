@@ -7,6 +7,7 @@
  "field_order": [
   "site_name",
   "fc_team",
+  "column_break_tsud",
   "login_restricted",
   "section_break_ozns",
   "users"
@@ -47,12 +48,16 @@
    "no_copy": 1,
    "options": "FC Site User",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tsud",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-01 11:06:16.821054",
+ "modified": "2025-06-01 11:30:47.060460",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Site",
