@@ -18,7 +18,7 @@ frappe.ui.form.on("FC Site", {
                     );
                 }
             );
-            if (frappe.user.has_role("System Manager")) {
+            if (frappe.user.has_role("FC Admin")) {
                 frm.add_custom_button(
                     __("Fetch Users"), async function () {
                         frappe.dom.freeze("Fetching users...");

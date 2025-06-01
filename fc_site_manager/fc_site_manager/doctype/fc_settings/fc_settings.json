@@ -73,7 +73,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-31 19:37:33.641286",
+ "modified": "2025-06-01 11:03:54.225032",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Settings",
@@ -85,7 +85,7 @@
    "email": 1,
    "print": 1,
    "read": 1,
-   "role": "System Manager",
+   "role": "FC Admin",
    "share": 1,
    "write": 1
   }

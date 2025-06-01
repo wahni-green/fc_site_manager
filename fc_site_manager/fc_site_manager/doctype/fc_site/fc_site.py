@@ -33,7 +33,7 @@ class FCSite(Document):
 
 	@frappe.whitelist()
 	def disable_instance_users(self):
-		frappe.only_for("System Manager")
+		frappe.only_for("FC Admin")
 		sid = self.login_as_admin()
 
 		for row in self.users:
@@ -47,7 +47,7 @@ class FCSite(Document):
 
 	@frappe.whitelist()
 	def fetch_instance_users(self):
-		frappe.only_for("System Manager")
+		frappe.only_for("FC Admin")
 		settings = self.get_fc_settings()
 		sid = self.login_as_admin()
 
@@ -95,6 +95,7 @@ class FCSite(Document):
 				frappe.throw(user_creation.text)
 			else:
 				self.append("users", {"user": user})
+				self.flags.ignore_permissions = True
 				self.save()
 
 		random_password = frappe.generate_hash(length=12)

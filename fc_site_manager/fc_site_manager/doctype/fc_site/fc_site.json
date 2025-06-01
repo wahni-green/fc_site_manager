@@ -52,7 +52,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-31 17:55:47.717466",
+ "modified": "2025-06-01 11:06:16.821054",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Site",
@@ -67,9 +67,24 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "FC Admin",
    "share": 1,
    "write": 1
+  },
+  {
+   "read": 1,
+   "role": "FC User"
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "FC Admin",
+   "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Desk User"
   }
  ],
  "row_format": "Dynamic",

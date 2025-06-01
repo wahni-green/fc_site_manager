@@ -45,7 +45,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-31 16:51:45.296786",
+ "modified": "2025-06-01 11:04:46.039189",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Team",
@@ -60,9 +60,13 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "FC Admin",
    "share": 1,
    "write": 1
+  },
+  {
+   "read": 1,
+   "role": "FC User"
   }
  ],
  "row_format": "Dynamic",
