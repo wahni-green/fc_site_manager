@@ -70,7 +70,7 @@ class FCSettings(Document):
 	def get_all_sites(self):
 		teams = self.get_fc_teams()
 		for team in teams:
-			headers = self.get_req_headers(team.team_id)
+			headers = self.get_req_headers(team.name)
 			response = requests.get(
 				f"{self.base_url}/api/method/press.api.site.all",
 				headers=headers
