@@ -44,6 +44,10 @@ class FCSite(Document):
 			).raise_for_status()
 
 		frappe.msgprint(_("All users have been disabled for this site."))
+		self.add_comment(
+			"Workflow",
+			f"Disabled users on {self.site_name}."
+		)
 
 	@frappe.whitelist()
 	def fetch_instance_users(self):
@@ -71,7 +75,7 @@ class FCSite(Document):
 		self.save()
 		self.add_comment(
 			"Workflow",
-			f"{frappe.session.user} fetched users from {self.site_name}."
+			f"fetched users from {self.site_name}."
 		)
 
 	@frappe.whitelist()
@@ -82,7 +86,7 @@ class FCSite(Document):
 		if user == "Administrator":
 			self.add_comment(
 				"Workflow",
-				f"{frappe.session.user} logged on to {self.site_name}."
+				f"logged on to {self.site_name}."
 			)
 			return sid
 
@@ -120,7 +124,7 @@ class FCSite(Document):
 		user_login_response.raise_for_status()
 		self.add_comment(
 			"Workflow",
-			f"{frappe.session.user} logged on to {self.site_name}."
+			f"logged on to {self.site_name}."
 		)
 
 		return user_login_response.cookies.get_dict().get("sid")
@@ -168,7 +172,7 @@ class FCSite(Document):
 		user_login_response.raise_for_status()
 		self.add_comment(
 			"Workflow",
-			f"{frappe.session.user} impersonated as {impersonate_as} and logged on to {self.site_name}."
+			f"impersonated as {impersonate_as} and logged on to {self.site_name}."
 		)
 		return user_login_response.cookies.get_dict().get("sid")
 
