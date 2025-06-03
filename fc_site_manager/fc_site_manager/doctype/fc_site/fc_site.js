@@ -5,7 +5,7 @@ frappe.ui.form.on("FC Site", {
 	refresh(frm) {
         if (!frm.doc.login_restricted) {
             frm.add_custom_button(
-                __("Login"), async function () {
+                __("Self"), async function () {
                     frappe.dom.freeze("Fetching credentials...");
                     let credentials = await frm.call("login_to_site");
                     frappe.dom.unfreeze();
@@ -16,8 +16,62 @@ frappe.ui.form.on("FC Site", {
                         },
                         true
                     );
-                }
+                }, __("Login")
             );
+
+            if (frm.doc.allow_impersonation) {
+                frm.add_custom_button(
+                    __("Impersonate"), async function () {
+                        let dialog = new frappe.ui.Dialog({
+                            title: __("Impersonate User"),
+                            fields: [
+                                {
+                                    label: __("User"),
+                                    fieldname: "user",
+                                    fieldtype: "Link",
+                                    options: "User",
+                                    reqd: 1,
+                                    get_query() {
+                                        return {
+                                            filters: {
+                                                enabled: 1,
+                                                user_type: "System User",
+                                                name: ["not in", [frappe.session.user, "Administrator"]],
+                                            },
+                                        };
+                                    },
+                                },
+                                {
+                                    "label": __("Reason"),
+                                    "fieldname": "reason",
+                                    "fieldtype": "Small Text",
+                                    "reqd": 1,
+                                }
+                            ],
+                            primary_action_label: __("Impersonate"),
+                            primary_action(values) {
+                                dialog.hide();
+                                frappe.dom.freeze("Fetching credentials...");
+                                frm.call("impersonate_as_user", {
+                                    impersonate_as: values.user,
+                                    reason: values.reason,
+                                }).then((r) => {
+                                    frappe.dom.unfreeze();
+                                    open_url_post(
+                                        `https://${frm.doc.site_name}/app`,
+                                        {
+                                            sid: r.message,
+                                        },
+                                        true
+                                    );
+                                });
+                            },
+                        });
+                        dialog.show();
+                    }, __("Login")
+                );
+            }
+
             if (frappe.user.has_role("FC Admin")) {
                 frm.add_custom_button(
                     __("Fetch Users"), async function () {

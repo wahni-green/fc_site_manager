@@ -8,6 +8,7 @@
   "site_name",
   "fc_team",
   "login_restricted",
+  "allow_impersonation",
   "section_break_ozns",
   "users"
  ],
@@ -47,12 +48,19 @@
    "no_copy": 1,
    "options": "FC Site User",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_impersonation",
+   "fieldtype": "Check",
+   "label": "Allow Impersonation",
+   "permlevel": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-01 12:54:21.280419",
+ "modified": "2025-06-03 09:11:34.309808",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Site",
