@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-22 16:02:47.579296",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "column_break_oqum",
+  "update_site",
+  "section_break_tmns",
+  "server",
+  "bench",
+  "column_break_sifz",
+  "skip_failing_patches",
+  "skip_backups"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Site",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_oqum",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "update_site",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Update Site"
+  },
+  {
+   "fieldname": "section_break_tmns",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Data",
+   "label": "Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Data",
+   "label": "Bench",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sifz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_failing_patches",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Skip Failing Patches"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_backups",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Skip Backups"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-22 16:17:07.975201",
+ "modified_by": "Administrator",
+ "module": "FC Site Manager",
+ "name": "FC Update Site",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
