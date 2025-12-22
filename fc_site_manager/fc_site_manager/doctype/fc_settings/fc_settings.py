@@ -78,11 +78,16 @@ class FCSettings(Document):
 			data = response.json()
 			for site in data.get("message"):
 				if frappe.db.exists("FC Site", site.get("name")):
+					doc = frappe.get_doc("FC Site", site.get("name"))
+					doc.bench_id = site.get("group")
+					doc.fc_team = team.name
+					doc.save(ignore_permissions=True)
 					continue
 				
 				frappe.get_doc({
 					"doctype": "FC Site",
 					"site_name": site.get("name"),
+					"bench_id": site.get("group"),
 					"fc_team": team.name,
 					"login_restricted": 1,
 					"allow_impersonation": 0,

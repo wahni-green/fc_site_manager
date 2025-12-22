@@ -7,6 +7,8 @@
  "field_order": [
   "site_name",
   "fc_team",
+  "bench_id",
+  "column_break_rpsz",
   "login_restricted",
   "allow_impersonation",
   "section_break_ozns",
@@ -55,12 +57,22 @@
    "fieldtype": "Check",
    "label": "Allow Impersonation",
    "permlevel": 1
+  },
+  {
+   "fieldname": "bench_id",
+   "fieldtype": "Data",
+   "label": "Bench ID",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "column_break_rpsz",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-03 09:11:34.309808",
+ "modified": "2025-12-22 16:53:03.293024",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Site",

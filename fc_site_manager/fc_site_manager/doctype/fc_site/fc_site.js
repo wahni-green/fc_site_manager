@@ -3,6 +3,13 @@
 
 frappe.ui.form.on("FC Site", {
 	refresh(frm) {
+        frm.add_custom_button(
+            __("Update"),
+            async function () {
+                frappe.new_doc("FC Update", {"bench_id": frm.doc.bench_id});
+            }, __("Actions")
+        );
+
         if (!frm.doc.login_restricted) {
             frm.add_custom_button(
                 __("Self"), async function () {
