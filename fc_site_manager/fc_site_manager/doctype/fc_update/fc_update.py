@@ -82,24 +82,24 @@ class FCUpdate(Document):
 		data = response.json().get("message")
 
 		if not data:
-			frappe.msgprint("Release Group not found. Site might be on shared bench.")
+			frappe.throw("Release Group not found. Site might be on shared bench.")
 			return
 
 		if data.get("status") != "Active":
-			frappe.msgprint("The Release Group is not active.")
+			frappe.throw("The Release Group is not active.")
 			return
 
 		if not data.get("deploy_information"):
-			frappe.msgprint("No deployable updates found.")
+			frappe.throw("No deployable updates found.")
 			return
 
 		deploy_info = data["deploy_information"]
 		if not deploy_info.get("update_available"):
-			frappe.msgprint("No updates available.")
+			frappe.throw("No updates available.")
 			return
 
 		if deploy_info.get("deploy_in_progress"):
-			frappe.msgprint("Another deploy is already in progress.")
+			frappe.throw("Another deploy is already in progress.")
 			return
 
 		self.set("sites", [])
