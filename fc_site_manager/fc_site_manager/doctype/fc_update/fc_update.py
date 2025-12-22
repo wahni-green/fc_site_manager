@@ -81,6 +81,10 @@ class FCUpdate(Document):
 		)
 		data = response.json().get("message")
 
+		if not data:
+			frappe.msgprint("Release Group not found. Site might be on shared bench.")
+			return
+
 		if data.get("status") != "Active":
 			frappe.msgprint("The Release Group is not active.")
 			return
