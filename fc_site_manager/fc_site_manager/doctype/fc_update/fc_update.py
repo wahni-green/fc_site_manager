@@ -47,6 +47,9 @@ class FCUpdate(Document):
 				"skip_failing_patches": site.skip_failing_patches,
 			})
 
+		if not sites:
+			frappe.throw("No sites selected for deployment.")
+
 		payload = {
 			"name": self.bench_id,
 			"apps": apps,
