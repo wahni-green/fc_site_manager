@@ -16,6 +16,9 @@ class FCUpdate(Document):
 	def on_submit(self):
 		self.initiate_deployment()
 
+	def on_cancel(self):
+		frappe.thow("FC Update cannot be cancelled.")
+
 	def initiate_deployment(self):
 		settings = frappe.get_cached_doc("FC Settings")
 		headers = settings.get_req_headers(self.fc_team)
@@ -73,6 +76,30 @@ class FCUpdate(Document):
 
 		self.db_set("deploy_candidate", data)
 		frappe.msgprint("Deployment initiated successfully.")
+
+	@frappe.whitelist()
+	def get_build_status(self):
+		if not self.deploy_candidate:
+			frappe.throw("No deploy candidate found.")
+
+		settings = frappe.get_cached_doc("FC Settings")
+		headers = settings.get_req_headers(self.fc_team)
+		response = requests.post(
+			f"{settings.base_url}/api/method/press.api.client.get",
+			headers=headers,
+			json={"doctype": "Deploy Candidate Build", "name": self.deploy_candidate}
+		)
+		data = response.json().get("message")
+		if not data:
+			frappe.throw(
+				f"Deploy Candidate Build not found. {response.text}."
+			)
+		
+		build_status = f"Build Status: {data.get('status')}"
+		build_status += "<br>Build Steps:<br>"
+		for step in data.get("build_steps", []):
+			build_status += f"{step.get('stage')} - {step.get('step')}: {step.get('status')}<br>"
+		frappe.msgprint(build_status)
 
 	@frappe.whitelist()
 	def get_release_groups(self):

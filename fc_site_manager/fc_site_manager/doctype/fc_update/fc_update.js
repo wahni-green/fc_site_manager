@@ -9,5 +9,11 @@ frappe.ui.form.on("FC Update", {
                 frm.dirty();
             });
         }
+
+        if (frm.doc.docstatus == 1) {
+            frm.add_custom_button(__('Fetch Status'), async function() {
+                await frm.call("get_build_status");
+            });
+        }
 	},
 });
