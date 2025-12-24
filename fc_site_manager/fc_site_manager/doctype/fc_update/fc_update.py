@@ -71,6 +71,7 @@ class FCUpdate(Document):
 			)
 			frappe.throw("Failed to initiate deployment.")
 
+		self.db_set("deploy_candidate", data)
 		frappe.msgprint("Deployment initiated successfully.")
 
 	@frappe.whitelist()

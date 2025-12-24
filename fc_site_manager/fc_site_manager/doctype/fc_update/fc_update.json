@@ -7,9 +7,10 @@
  "field_order": [
   "section_break_xnkm",
   "bench_id",
+  "amended_from",
   "column_break_ogov",
   "fc_team",
-  "amended_from",
+  "deploy_candidate",
   "section_break_vkge",
   "sites",
   "section_break_kysk",
@@ -69,13 +70,19 @@
    "options": "FC Team",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "deploy_candidate",
+   "fieldtype": "Data",
+   "label": "Deploy Candidate",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-24 14:47:31.167791",
+ "modified": "2025-12-24 16:44:47.531671",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Update",
