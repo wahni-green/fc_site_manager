@@ -18,7 +18,7 @@ class FCUpdate(Document):
 
 	def initiate_deployment(self):
 		settings = frappe.get_cached_doc("FC Settings")
-		headers = settings.get_req_headers(settings.fc_team_id)
+		headers = settings.get_req_headers(self.fc_team)
 		apps = []
 		for app in self.apps:
 			if not app.deploy:
@@ -73,7 +73,7 @@ class FCUpdate(Document):
 	@frappe.whitelist()
 	def get_release_groups(self):
 		settings = frappe.get_cached_doc("FC Settings")
-		headers = settings.get_req_headers(settings.fc_team_id)
+		headers = settings.get_req_headers(self.fc_team)
 		response = requests.post(
 			f"{settings.base_url}/api/method/press.api.client.get",
 			headers=headers,
@@ -82,7 +82,9 @@ class FCUpdate(Document):
 		data = response.json().get("message")
 
 		if not data:
-			frappe.throw("Release Group not found. Site might be on shared bench.")
+			frappe.throw(
+				f"Release Group not found. {response.text}."
+			)
 			return
 
 		if data.get("status") != "Active":

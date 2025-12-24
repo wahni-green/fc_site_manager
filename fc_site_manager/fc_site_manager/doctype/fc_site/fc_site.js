@@ -6,7 +6,7 @@ frappe.ui.form.on("FC Site", {
         frm.add_custom_button(
             __("Update"),
             async function () {
-                frappe.new_doc("FC Update", {"bench_id": frm.doc.bench_id});
+                frappe.new_doc("FC Update", { "bench_id": frm.doc.bench_id, "fc_team": frm.doc.fc_team });
             }, __("Actions")
         );
 
