@@ -163,6 +163,8 @@ class FCUpdate(Document):
 					"release": app.get("next_release"),
 					"source": release.get("source"),
 					"hash": release.get("hash"),
+					"current_hash": app.get("current_hash"),
+					"repository_url": app.get("repository_url"),
 					"update_available": cint(app.get("update_available"))
 				}
 			)

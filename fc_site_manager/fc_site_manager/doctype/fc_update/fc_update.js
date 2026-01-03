@@ -17,3 +17,12 @@ frappe.ui.form.on("FC Update", {
         }
 	},
 });
+
+
+frappe.ui.form.on("FC Update App", {
+    view_diff(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        let diff_url = `${row.repository_url}/compare/${row.current_hash}...${row.hash}`
+        window.open(diff_url, '_blank');
+    }
+});
