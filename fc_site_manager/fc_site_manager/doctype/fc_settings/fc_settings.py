@@ -94,3 +94,39 @@ class FCSettings(Document):
 				}).insert(ignore_permissions=True)
 
 		frappe.msgprint(_("All sites have been fetched successfully."))
+
+
+	@frappe.whitelist()
+	def add_resource_to_perm_groups(self, resource, perm):
+		headers = self.get_req_headers(self.fc_team_id)
+		response = requests.post(
+			f"{self.base_url}/api/method/press.api.client.get_list",
+			headers=headers,
+			json={
+				"doctype": resource,
+				"filters": {
+					"team": self.fc_team_id
+				},
+				"limit": 99999,
+				"limit_page_length": 99999,
+				"limit_start": 0,
+				"start": 0,
+			}
+		)
+		data = response.json().get("message")
+		for d in data:
+			response = requests.post(
+				f"{self.base_url}/api/method/press.api.client.run_doc_method",
+				headers=headers,
+				json={
+					"args": {
+						"document_name": d.get("name"),
+						"document_type": resource,
+					},
+					"dn": perm,
+					"dt": "Press Role",
+					"method": "add_resource",
+				}
+			)
+
+		frappe.msgprint(_("All {0}(s) have been added to {1} succesfully.").format(resource, perm))
