@@ -13,6 +13,22 @@ class FCUpdate(Document):
 		if self.is_new():
 			self.get_release_groups()
 
+		sites_for_update = [str(d.site).split(".")[0] for d in self.sites if d.update_site]
+		self.title = ", ".join(sites_for_update) if sites_for_update else self.bench_id
+		self.check_allow_fc_user_to_update()
+
+	def check_allow_fc_user_to_update(self):
+		self.allow_fc_user_to_update = 1
+		for site in self.sites:
+			if not site.update_site:
+				continue
+			
+			if not frappe.get_cached_value(
+				"FC Site", site.site, "allow_fc_user_to_update"
+			):
+				self.allow_fc_user_to_update = 0
+				break
+
 	def on_submit(self):
 		self.initiate_deployment()
 

@@ -7,10 +7,13 @@
  "field_order": [
   "section_break_xnkm",
   "bench_id",
+  "deploy_candidate",
   "amended_from",
   "column_break_ogov",
   "fc_team",
-  "deploy_candidate",
+  "requested_by",
+  "title",
+  "allow_fc_user_to_update",
   "section_break_vkge",
   "sites",
   "section_break_kysk",
@@ -76,13 +79,36 @@
    "fieldtype": "Data",
    "label": "Deploy Candidate",
    "read_only": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Title",
+   "read_only": 1
+  },
+  {
+   "default": "__user",
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only_depends_on": "requested_by",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_fc_user_to_update",
+   "fieldtype": "Check",
+   "label": "Allow FC User To Update",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-24 16:44:47.531671",
+ "modified": "2026-01-27 10:40:08.070556",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Update",
@@ -118,5 +144,6 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "title"
 }
