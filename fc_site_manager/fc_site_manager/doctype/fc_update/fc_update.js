@@ -23,7 +23,12 @@ frappe.ui.form.on("FC Update", {
                     ],
                     primary_action_label: __("Fetch Update"),
                     async primary_action(values) {
-                        await frm.call("get_app_latest_update", { app_name: values.app_name });
+                        frappe.dom.freeze();
+                        try {
+                            await frm.call("get_app_latest_update", { app_name: values.app_name });
+                        } finally {
+                            frappe.dom.unfreeze();
+                        }
                         dialog.hide();
                     }
                 });
