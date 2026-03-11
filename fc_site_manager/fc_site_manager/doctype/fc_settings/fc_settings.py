@@ -75,7 +75,14 @@ class FCSettings(Document):
 				f"{self.base_url}/api/method/press.api.site.all",
 				headers=headers
 			)
+
 			data = response.json()
+			if not data:
+				frappe.throw(_("No response received from the server for team {0}.").format(team.name))
+
+			if not data.get("message"):
+				continue
+
 			for site in data.get("message"):
 				if frappe.db.exists("FC Site", site.get("name")):
 					doc = frappe.get_doc("FC Site", site.get("name"))

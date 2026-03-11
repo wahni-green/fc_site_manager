@@ -7,13 +7,34 @@ frappe.ui.form.on("FC Update", {
             frm.add_custom_button(__('Check for Updates'), async function() {
                 await frm.call("get_release_groups");
                 frm.dirty();
-            });
+            }, __("Actions"));
+
+            frm.add_custom_button(__("Fetch Latest Update for App"), async function() {
+                let dialog = new frappe.ui.Dialog({
+                    title: __("Fetch Latest Update for App"),
+                    fields: [
+                        {
+                            fieldname: "app_name",
+                            fieldtype: "Select",
+                            label: __("App"),
+                            options: frm.doc.apps.map(d => d.app),
+                            reqd: 1
+                        }
+                    ],
+                    primary_action_label: __("Fetch Update"),
+                    async primary_action(values) {
+                        await frm.call("get_app_latest_update", { app_name: values.app_name });
+                        dialog.hide();
+                    }
+                });
+                dialog.show();
+            }, __("Actions"));
         }
 
         if (frm.doc.docstatus == 1) {
             frm.add_custom_button(__('Fetch Status'), async function() {
                 await frm.call("get_build_status");
-            });
+            }, __("Actions"));
         }
 	},
 });

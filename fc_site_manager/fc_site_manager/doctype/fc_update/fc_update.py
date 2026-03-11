@@ -186,3 +186,23 @@ class FCUpdate(Document):
 			)
 
 		frappe.msgprint("Release groups fetched successfully.")
+
+	@frappe.whitelist()
+	def get_app_latest_update(self, app_name):
+		settings = frappe.get_cached_doc("FC Settings")
+		headers = settings.get_req_headers(self.fc_team)
+		response = requests.post(
+			f"{settings.base_url}/api/method/press.api.bench.fetch_latest_app_update",
+			headers=headers,
+			json={"name": self.bench_id, "app": app_name}
+		)
+		data = response.json().get("message")
+
+		if not data:
+			frappe.throw(
+				f"Latest update for {app_name} not found. {response.text}."
+			)
+			return
+
+		frappe.msgprint(f"Latest update for {app_name} fetched successfully.")
+		self.get_release_groups()
