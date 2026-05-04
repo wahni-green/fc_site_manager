@@ -113,6 +113,9 @@ class FCUpdate(Document):
 				f"Deploy Candidate Build not found. {response.text}."
 			)
 
+		if data.get("is_validating"):
+			frappe.msgprint("Deploy is being validated. Will start soon.")
+
 		if dc := data.get("candidate"):
 			self.db_set("deploy_candidate", dc)
 
@@ -123,6 +126,9 @@ class FCUpdate(Document):
 
 		if not self.deploy_candidate:
 			self.get_deploy_candidate()
+
+		if not self.deploy_candidate:
+			return
 
 		response = requests.post(
 			f"{settings.base_url}/api/method/press.api.client.get",
