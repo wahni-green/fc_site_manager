@@ -82,24 +82,48 @@ class FCUpdate(Document):
 			json=payload
 		)
 
-		data = response.json().get("message")
-		if not data:
+		data = response.json()
+		if dc := data.get("message"):
+			self.db_set("deploy_candidate", dc)
+		
+		if data.get("exc_type"):
 			frappe.log_error(
 				"FC Update Deployment Failed",
 				response.text,
 			)
 			frappe.throw("Failed to initiate deployment.")
 
-		self.db_set("deploy_candidate", data)
 		frappe.msgprint("Deployment initiated successfully.")
 
-	@frappe.whitelist()
-	def get_build_status(self):
-		if not self.deploy_candidate:
-			frappe.throw("No deploy candidate found.")
+	def get_deploy_candidate(self):
+		if self.deploy_candidate:
+			return
 
 		settings = frappe.get_cached_doc("FC Settings")
 		headers = settings.get_req_headers(self.fc_team)
+
+		response = requests.post(
+			f"{settings.base_url}/api/method/press.api.bench.deploy_status",
+			headers=headers,
+			json={"name": self.bench_id}
+		)
+		data = response.json().get("message")
+		if not data:
+			frappe.throw(
+				f"Deploy Candidate Build not found. {response.text}."
+			)
+
+		if dc := data.get("candidate"):
+			self.db_set("deploy_candidate", dc)
+
+	@frappe.whitelist()
+	def get_build_status(self):
+		settings = frappe.get_cached_doc("FC Settings")
+		headers = settings.get_req_headers(self.fc_team)
+
+		if not self.deploy_candidate:
+			self.get_deploy_candidate()
+
 		response = requests.post(
 			f"{settings.base_url}/api/method/press.api.client.get",
 			headers=headers,
