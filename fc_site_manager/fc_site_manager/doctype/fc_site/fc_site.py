@@ -37,7 +37,7 @@ class FCSite(Document):
 		sid = parse_qs(parsed.query).get("sid", [None])[0]
 
 		if not sid:
-			frappe.throw(_("Login failed."))
+			frappe.throw(_(f"Login failed. URL: {url}"))
 
 		return sid
 
