@@ -3,6 +3,8 @@
 
 import json
 import requests
+from urllib.parse import urlparse, parse_qs
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -17,18 +19,26 @@ class FCSite(Document):
 			frappe.throw(_("Login is restricted for this site."))
 		
 		settings = self.get_fc_settings()
-		data = {"name": self.name}
+		data = {
+			"dt": "Site",
+			"dn": self.name,
+			"method": "login_as_admin",
+			"args": {}
+		}
 
 		response = requests.post(
-			f"{settings.base_url}/api/method/press.api.site.login",
+			f"{settings.base_url}/api/method/press.api.client.run_doc_method",
 			headers=settings.get_req_headers(self.fc_team),
 			json=data
 		)
 
-		sid = response.json().get("message").get("sid")
+		url = response.json().get("message")
+		parsed = urlparse(url)
+		sid = parse_qs(parsed.query).get("sid", [None])[0]
+
 		if not sid:
-			frappe.throw(_("Login failed."))
-		
+			frappe.throw(_(f"Login failed. URL: {url}"))
+
 		return sid
 
 	@frappe.whitelist()
