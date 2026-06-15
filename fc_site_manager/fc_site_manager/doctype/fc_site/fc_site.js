@@ -94,7 +94,7 @@ frappe.ui.form.on("FC Site", {
             __("Update"),
             async function () {
                 frappe.new_doc("FC Update", { "bench_id": frm.doc.bench_id, "fc_team": frm.doc.fc_team });
-            }, __("Actions")
+            }, __("Tools")
         );
 	},
 });

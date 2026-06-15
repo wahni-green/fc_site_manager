@@ -7,7 +7,9 @@
  "field_order": [
   "site_name",
   "fc_team",
+  "column_break_psxn",
   "bench_id",
+  "version",
   "column_break_rpsz",
   "login_restricted",
   "allow_impersonation",
@@ -75,12 +77,22 @@
    "fieldtype": "Check",
    "label": "Allow FC User to Update",
    "permlevel": 1
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "label": "Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_psxn",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-27 10:41:19.103640",
+ "modified": "2026-06-15 14:31:03.442660",
  "modified_by": "Administrator",
  "module": "FC Site Manager",
  "name": "FC Site",

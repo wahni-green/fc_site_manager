@@ -69,6 +69,8 @@ class FCSettings(Document):
 	@frappe.whitelist()
 	def get_all_sites(self):
 		teams = self.get_fc_teams()
+		all_sites = []
+
 		for team in teams:
 			headers = self.get_req_headers(team.name)
 			response = requests.get(
@@ -83,24 +85,20 @@ class FCSettings(Document):
 			if not data.get("message"):
 				continue
 
-			for site in data.get("message"):
-				if frappe.db.exists("FC Site", site.get("name")):
-					doc = frappe.get_doc("FC Site", site.get("name"))
-					doc.bench_id = site.get("group")
-					doc.fc_team = team.name
-					doc.save(ignore_permissions=True)
-					continue
-				
-				frappe.get_doc({
-					"doctype": "FC Site",
-					"site_name": site.get("name"),
-					"bench_id": site.get("group"),
-					"fc_team": team.name,
-					"login_restricted": 1,
-					"allow_impersonation": 0,
-				}).insert(ignore_permissions=True)
+			for site in data.get("message") or []:
+				all_sites.append({"site": site, "team": team.name})
 
-		frappe.msgprint(_("All sites have been fetched successfully."))
+		if len(all_sites) > 30:
+			frappe.enqueue(
+				method=sync_fc_sites,
+				queue="long",
+				timeout=1500,
+				sites=all_sites,
+			)
+			frappe.msgprint(_("More than 30 sites found. Sync has been queued as a background job."))
+		else:
+			sync_fc_sites(all_sites)
+			frappe.msgprint(_("All sites have been fetched successfully."))
 
 
 	@frappe.whitelist()
@@ -137,3 +135,26 @@ class FCSettings(Document):
 			)
 
 		frappe.msgprint(_("All {0}(s) have been added to {1} succesfully.").format(resource, perm))
+
+
+def sync_fc_sites(sites):
+	for item in sites:
+		site = item["site"]
+		team_name = item["team"]
+
+		if frappe.db.exists("FC Site", site.get("name")):
+			doc = frappe.get_doc("FC Site", site.get("name"))
+			doc.bench_id = site.get("group")
+			doc.fc_team = team_name
+			doc.version = site.get("version")
+			doc.save(ignore_permissions=True)
+		else:
+			frappe.get_doc({
+				"doctype": "FC Site",
+				"site_name": site.get("name"),
+				"bench_id": site.get("group"),
+				"fc_team": team_name,
+				"version": site.get("version"),
+				"login_restricted": 1,
+				"allow_impersonation": 0,
+			}).insert(ignore_permissions=True)
