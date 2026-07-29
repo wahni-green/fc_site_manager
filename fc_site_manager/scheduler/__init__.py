@@ -18,8 +18,25 @@ def process_scheduled_updates():
     )
 
     for name in updates:
+        current_status = frappe.db.get_value(
+            "FC Update", name, "deployment_status", for_update=True
+        )
+        if current_status != "Scheduled":
+            frappe.db.commit()
+            continue
+
         frappe.db.set_value("FC Update", name, "deployment_status", "Queued")
-        frappe.enqueue(deploy_scheduled_update, queue="long", update=name)
+        frappe.db.commit()
+
+        try:
+            frappe.enqueue(deploy_scheduled_update, queue="long", update=name)
+        except Exception as e:
+            frappe.db.set_value("FC Update", name, "deployment_status", "Failed")
+            frappe.db.commit()
+            frappe.log_error(
+                message=str(e),
+                title=f"Error enqueueing scheduled deployment for {name}"
+            )
 
 
 def deploy_scheduled_update(update):

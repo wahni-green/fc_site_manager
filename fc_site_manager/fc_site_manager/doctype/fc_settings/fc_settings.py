@@ -55,9 +55,12 @@ class FCSettings(Document):
 		]
 
 	def is_login_allowed(self, user):
+		if not self.allowed_login_domains:
+			return True
+
 		allowed_domains = self.get_allowed_login_domains()
 		if not allowed_domains:
-			return True
+			return False
 
 		domain = user.rsplit("@", 1)[-1].lower() if "@" in user else ""
 		return domain in allowed_domains
