@@ -16,7 +16,6 @@ def claim_scheduled_update(name):
         "FC Update", name, "deployment_status", for_update=True
     )
     if current_status != "Scheduled":
-        frappe.db.commit()
         return False
 
     frappe.db.set_value("FC Update", name, "deployment_status", "Queued")
@@ -37,6 +36,7 @@ def process_scheduled_updates():
 
     for name in updates:
         if not claim_scheduled_update(name):
+            frappe.db.commit()
             continue
 
         try:
