@@ -101,8 +101,8 @@ class FCUpdate(Document):
 		)
 
 		data = response.json()
-		if dc := data.get("message"):
-			self.db_set("deploy_candidate", dc)
+		# if dc := data.get("message"):
+		# 	self.db_set("deploy_candidate", dc)
 
 		if data.get("exc_type"):
 			frappe.log_error(
