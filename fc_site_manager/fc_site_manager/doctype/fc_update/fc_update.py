@@ -139,6 +139,25 @@ class FCUpdate(Document):
 			self.db_set("deploy_candidate", dc)
 
 	@frappe.whitelist()
+	def force_start_deployment(self):
+		if self.docstatus != 1 or self.deployment_status != "Scheduled":
+			frappe.throw(_("Only a scheduled update can be force started."))
+
+		from fc_site_manager.scheduler import claim_scheduled_update, deploy_scheduled_update
+
+		if not claim_scheduled_update(self.name):
+			frappe.throw(_("This update is no longer scheduled."))
+
+		try:
+			frappe.enqueue(deploy_scheduled_update, queue="long", update=self.name)
+		except Exception:
+			frappe.db.set_value("FC Update", self.name, "deployment_status", "Failed")
+			frappe.db.commit()
+			raise
+
+		frappe.msgprint(_("Deployment has been queued to start now."))
+
+	@frappe.whitelist()
 	def get_build_status(self):
 		settings = frappe.get_cached_doc("FC Settings")
 		headers = settings.get_req_headers(self.fc_team)

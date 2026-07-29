@@ -14,7 +14,9 @@
   "requested_by",
   "title",
   "allow_fc_user_to_update",
+  "section_break_sdvq",
   "scheduled_datetime",
+  "column_break_qwzt",
   "deployment_status",
   "section_break_vkge",
   "sites",
@@ -106,10 +108,19 @@
    "read_only": 1
   },
   {
+   "fieldname": "section_break_sdvq",
+   "fieldtype": "Section Break",
+   "label": "Scheduling"
+  },
+  {
    "description": "Deploy at this date and time instead of immediately on submit. Leave empty to deploy immediately.",
    "fieldname": "scheduled_datetime",
    "fieldtype": "Datetime",
    "label": "Scheduled Datetime"
+  },
+  {
+   "fieldname": "column_break_qwzt",
+   "fieldtype": "Column Break"
   },
   {
    "default": "",
