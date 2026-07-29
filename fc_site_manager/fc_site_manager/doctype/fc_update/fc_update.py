@@ -143,22 +143,15 @@ class FCUpdate(Document):
 		if self.docstatus != 1 or self.deployment_status != "Scheduled":
 			frappe.throw(_("Only a scheduled update can be force started."))
 
-		current_status = frappe.db.get_value(
-			"FC Update", self.name, "deployment_status", for_update=True
-		)
-		if current_status != "Scheduled":
-			frappe.db.commit()
+		from fc_site_manager.scheduler import claim_scheduled_update, deploy_scheduled_update
+
+		if not claim_scheduled_update(self.name):
 			frappe.throw(_("This update is no longer scheduled."))
-
-		self.db_set("deployment_status", "Queued")
-		frappe.db.commit()
-
-		from fc_site_manager.scheduler import deploy_scheduled_update
 
 		try:
 			frappe.enqueue(deploy_scheduled_update, queue="long", update=self.name)
 		except Exception:
-			self.db_set("deployment_status", "Failed")
+			frappe.db.set_value("FC Update", self.name, "deployment_status", "Failed")
 			frappe.db.commit()
 			raise
 

@@ -6,6 +6,24 @@ import frappe
 from frappe.utils import create_batch, now_datetime
 
 
+def claim_scheduled_update(name):
+    """Atomically transition a Scheduled FC Update to Queued.
+
+    Returns True if this call won the claim, False if the update was
+    already claimed (or is no longer Scheduled) by another process.
+    """
+    current_status = frappe.db.get_value(
+        "FC Update", name, "deployment_status", for_update=True
+    )
+    if current_status != "Scheduled":
+        frappe.db.commit()
+        return False
+
+    frappe.db.set_value("FC Update", name, "deployment_status", "Queued")
+    frappe.db.commit()
+    return True
+
+
 def process_scheduled_updates():
     updates = frappe.get_all(
         "FC Update",
@@ -18,15 +36,8 @@ def process_scheduled_updates():
     )
 
     for name in updates:
-        current_status = frappe.db.get_value(
-            "FC Update", name, "deployment_status", for_update=True
-        )
-        if current_status != "Scheduled":
-            frappe.db.commit()
+        if not claim_scheduled_update(name):
             continue
-
-        frappe.db.set_value("FC Update", name, "deployment_status", "Queued")
-        frappe.db.commit()
 
         try:
             frappe.enqueue(deploy_scheduled_update, queue="long", update=name)
