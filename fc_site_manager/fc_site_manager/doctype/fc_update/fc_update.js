@@ -36,9 +36,21 @@ frappe.ui.form.on("FC Update", {
             }, __("Actions"));
         }
 
-        if (frm.doc.docstatus == 1) {
+        if (frm.doc.docstatus == 1 && frm.doc.deployment_status == "Initiated") {
             frm.add_custom_button(__('Fetch Status'), async function() {
                 await frm.call("get_build_status");
+            }, __("Actions"));
+        }
+
+        if (frm.doc.docstatus == 1 && frm.doc.deployment_status == "Scheduled") {
+            frm.add_custom_button(__('Force Start Deployment'), function() {
+                frappe.confirm(
+                    __("This will start the deployment now instead of waiting for the scheduled time. Continue?"),
+                    async function() {
+                        await frm.call("force_start_deployment");
+                        frm.reload_doc();
+                    }
+                );
             }, __("Actions"));
         }
 	},
