@@ -14,7 +14,9 @@
   "instance_users_section",
   "user_filter",
   "column_break_suai",
-  "fetch_and_disable_users"
+  "fetch_and_disable_users",
+  "login_restriction_section",
+  "allowed_login_domains"
  ],
  "fields": [
   {
@@ -67,6 +69,17 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "FC Team ID"
+  },
+  {
+   "fieldname": "login_restriction_section",
+   "fieldtype": "Section Break",
+   "label": "Login Restriction"
+  },
+  {
+   "description": "Comma-separated list of email domains (e.g. wahni.com) allowed to log in to FC sites through this app. Leave empty to allow all domains. Users outside these domains will be denied login, and their account on the FC site, if it exists, will be disabled.",
+   "fieldname": "allowed_login_domains",
+   "fieldtype": "Small Text",
+   "label": "Allowed Login Domains"
   }
  ],
  "grid_page_length": 50,

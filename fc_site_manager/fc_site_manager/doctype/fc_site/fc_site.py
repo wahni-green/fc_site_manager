@@ -100,6 +100,13 @@ class FCSite(Document):
 			)
 			return sid
 
+		settings = self.get_fc_settings()
+		if not settings.is_login_allowed(user):
+			self.disable_remote_user_if_exists(user, sid)
+			frappe.throw(_(
+				"Login is restricted to users with an email domain in: {0}"
+			).format(", ".join(settings.get_allowed_login_domains())))
+
 		user_doc = requests.get(
 			f"https://{self.site_name}/api/resource/User/{user}",
 			cookies={"sid": sid}
@@ -185,6 +192,26 @@ class FCSite(Document):
 			f"impersonated as {impersonate_as} and logged on to {self.site_name}."
 		)
 		return user_login_response.cookies.get_dict().get("sid")
+
+	def disable_remote_user_if_exists(self, user, sid):
+		response = requests.get(
+			f"https://{self.site_name}/api/resource/User/{user}",
+			cookies={"sid": sid}
+		).json()
+
+		if not response.get("data"):
+			return
+
+		requests.put(
+			f"https://{self.site_name}/api/resource/User/{user}",
+			cookies={"sid": sid},
+			json={"enabled": 0}
+		).raise_for_status()
+
+		self.add_comment(
+			"Workflow",
+			f"Disabled {user} on {self.site_name} (login restricted to another email domain)."
+		)
 
 	def generate_user_doc(self, username=None):
 		username = username or frappe.session.user
