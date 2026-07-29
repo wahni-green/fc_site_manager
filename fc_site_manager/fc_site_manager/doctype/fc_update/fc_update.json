@@ -14,6 +14,8 @@
   "requested_by",
   "title",
   "allow_fc_user_to_update",
+  "scheduled_datetime",
+  "deployment_status",
   "section_break_vkge",
   "sites",
   "section_break_kysk",
@@ -101,6 +103,21 @@
    "fieldname": "allow_fc_user_to_update",
    "fieldtype": "Check",
    "label": "Allow FC User To Update",
+   "read_only": 1
+  },
+  {
+   "description": "Deploy at this date and time instead of immediately on submit. Leave empty to deploy immediately.",
+   "fieldname": "scheduled_datetime",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Datetime"
+  },
+  {
+   "default": "",
+   "fieldname": "deployment_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Deployment Status",
+   "options": "\nScheduled\nQueued\nInitiated\nFailed",
    "read_only": 1
   }
  ],

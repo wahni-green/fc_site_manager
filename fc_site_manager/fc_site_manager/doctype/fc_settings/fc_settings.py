@@ -45,6 +45,26 @@ class FCSettings(Document):
 	def get_user_filters(self):
 		return json.loads(self.user_filter) if self.user_filter else []
 
+	def get_allowed_login_domains(self):
+		if not self.allowed_login_domains:
+			return []
+		return [
+			domain.strip().lower()
+			for domain in self.allowed_login_domains.split(",")
+			if domain.strip()
+		]
+
+	def is_login_allowed(self, user):
+		if not self.allowed_login_domains:
+			return True
+
+		allowed_domains = self.get_allowed_login_domains()
+		if not allowed_domains:
+			return False
+
+		domain = user.rsplit("@", 1)[-1].lower() if "@" in user else ""
+		return domain in allowed_domains
+
 	@frappe.whitelist()
 	def get_all_teams(self):
 		headers = self.get_req_headers(self.fc_team_id)

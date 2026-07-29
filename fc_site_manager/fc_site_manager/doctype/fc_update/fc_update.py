@@ -4,7 +4,8 @@
 import requests
 
 import frappe
-from frappe.utils.data import cint
+from frappe import _
+from frappe.utils.data import cint, get_datetime, now_datetime, format_datetime
 from frappe.model.document import Document
 
 
@@ -16,6 +17,14 @@ class FCUpdate(Document):
 		sites_for_update = [str(d.site).split(".")[0] for d in self.sites if d.update_site]
 		self.title = ", ".join(sites_for_update) if sites_for_update else self.bench_id
 		self.check_allow_fc_user_to_update()
+		self.validate_scheduled_datetime()
+
+	def validate_scheduled_datetime(self):
+		if not self.scheduled_datetime or self.docstatus != 0:
+			return
+
+		if get_datetime(self.scheduled_datetime) <= now_datetime():
+			frappe.throw(_("Scheduled Datetime must be in the future."))
 
 	def check_allow_fc_user_to_update(self):
 		self.allow_fc_user_to_update = 1
@@ -30,6 +39,15 @@ class FCUpdate(Document):
 				break
 
 	def on_submit(self):
+		if self.scheduled_datetime and get_datetime(self.scheduled_datetime) > now_datetime():
+			self.db_set("deployment_status", "Scheduled")
+			frappe.msgprint(
+				_("Deployment has been scheduled for {0}.").format(
+					format_datetime(self.scheduled_datetime)
+				)
+			)
+			return
+
 		self.initiate_deployment()
 
 	def on_cancel(self):
@@ -83,9 +101,9 @@ class FCUpdate(Document):
 		)
 
 		data = response.json()
-		if dc := data.get("message"):
-			self.db_set("deploy_candidate", dc)
-		
+		# if dc := data.get("message"):
+		# 	self.db_set("deploy_candidate", dc)
+
 		if data.get("exc_type"):
 			frappe.log_error(
 				"FC Update Deployment Failed",
@@ -93,6 +111,7 @@ class FCUpdate(Document):
 			)
 			frappe.throw("Failed to initiate deployment.")
 
+		self.db_set("deployment_status", "Initiated")
 		frappe.msgprint("Deployment initiated successfully.")
 
 	def get_deploy_candidate(self):
