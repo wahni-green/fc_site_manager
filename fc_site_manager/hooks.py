@@ -147,6 +147,11 @@ scheduler_events = {
 	"weekly": [
 		"fc_site_manager.scheduler.schedule_site_actions"
 	],
+	"cron": {
+		"*/5 * * * *": [
+			"fc_site_manager.scheduler.process_scheduled_updates"
+		]
+	},
 }
 
 # Testing
