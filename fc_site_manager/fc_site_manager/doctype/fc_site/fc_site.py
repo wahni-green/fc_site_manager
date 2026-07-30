@@ -103,7 +103,8 @@ class FCSite(Document):
 				"filters": {"site": self.site_name},
 				"order_by": "creation desc",
 				"limit_page_length": 20,
-			}
+			},
+			timeout=30
 		)
 		jobs = response.json().get("message")
 		if jobs is None:
@@ -119,20 +120,21 @@ class FCSite(Document):
 		response = requests.post(
 			f"{settings.base_url}/api/method/press.api.client.get",
 			headers=settings.get_req_headers(self.fc_team),
-			json={"doctype": "Agent Job", "name": job_name}
+			json={"doctype": "Agent Job", "name": job_name},
+			timeout=30
 		)
 		data = response.json().get("message")
 		if not data:
 			frappe.throw(_(f"Agent Job not found. {response.text}."))
 
 		details = (
-			f"Job Type: {data.get('job_type')}<br>"
-			f"Status: {data.get('status')}<br>"
-			f"Bench: {data.get('bench')}<br>"
-			f"Server: {data.get('server')}<br>"
-			f"Start: {data.get('start')}<br>"
-			f"End: {data.get('end')}<br>"
-			f"Duration: {data.get('duration')}<br>"
+			f"Job Type: {escape_html(data.get('job_type'))}<br>"
+			f"Status: {escape_html(data.get('status'))}<br>"
+			f"Bench: {escape_html(data.get('bench'))}<br>"
+			f"Server: {escape_html(data.get('server'))}<br>"
+			f"Start: {escape_html(data.get('start'))}<br>"
+			f"End: {escape_html(data.get('end'))}<br>"
+			f"Duration: {escape_html(data.get('duration'))}<br>"
 		)
 
 		if data.get("output"):
@@ -145,8 +147,8 @@ class FCSite(Document):
 			details += "<br><b>Steps</b><br>"
 			for step in data.get("steps"):
 				details += (
-					f"<details><summary>{step.get('step_name')} - {step.get('status')} "
-					f"({step.get('duration')})</summary>"
+					f"<details><summary>{escape_html(step.get('step_name'))} - {escape_html(step.get('status'))} "
+					f"({escape_html(step.get('duration'))})</summary>"
 				)
 				if step.get("output"):
 					details += f"<pre>{escape_html(step.get('output'))}</pre>"

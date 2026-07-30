@@ -5,7 +5,7 @@ import requests
 
 import frappe
 from frappe import _
-from frappe.utils.data import cint, get_datetime, now_datetime, format_datetime
+from frappe.utils.data import cint, escape_html, get_datetime, now_datetime, format_datetime
 from frappe.model.document import Document
 
 
@@ -193,26 +193,41 @@ class FCUpdate(Document):
 		settings = frappe.get_cached_doc("FC Settings")
 		headers = settings.get_req_headers(self.fc_team)
 
-		response = requests.post(
-			f"{settings.base_url}/api/method/press.api.client.get",
-			headers=headers,
-			json={"doctype": "Release Pipeline", "name": self.release_pipeline}
-		)
+		try:
+			response = requests.post(
+				f"{settings.base_url}/api/method/press.api.client.get",
+				headers=headers,
+				json={"doctype": "Release Pipeline", "name": self.release_pipeline},
+				timeout=30
+			)
+		except requests.RequestException:
+			frappe.throw(_("Failed to reach Frappe Cloud to fetch the Release Pipeline status."))
+
 		data = response.json().get("message")
-		if not data:
+		if not isinstance(data, dict):
 			frappe.throw(
 				f"Release Pipeline not found. {response.text}."
 			)
 
-		stages = (data.get("steps") or {}).get("stages", [])
+		steps = data.get("steps")
+		stages = steps.get("stages", []) if isinstance(steps, dict) else []
+		if not isinstance(stages, list):
+			stages = []
 
-		pipeline_status = f"Pipeline Status: {data.get('status')}"
+		pipeline_status = f"Pipeline Status: {escape_html(data.get('status'))}"
 		pipeline_status += "<br>Stages:<br>"
+		deploy_candidate = None
 		for stage in stages:
-			pipeline_status += f"{stage.get('label')}: {stage.get('status')}<br>"
+			if not isinstance(stage, dict):
+				continue
+
+			pipeline_status += f"{escape_html(stage.get('label'))}: {escape_html(stage.get('status'))}<br>"
 			for build in stage.get("builds", []):
-				if build.get("name"):
-					self.db_set("deploy_candidate", build.get("name"))
+				if isinstance(build, dict) and build.get("name"):
+					deploy_candidate = build.get("name")
+
+		if deploy_candidate:
+			self.db_set("deploy_candidate", deploy_candidate)
 
 		frappe.msgprint(pipeline_status)
 

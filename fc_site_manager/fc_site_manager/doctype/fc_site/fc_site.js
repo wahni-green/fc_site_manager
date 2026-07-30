@@ -90,8 +90,12 @@ frappe.ui.form.on("FC Site", {
                 frm.add_custom_button(
                     __("Fetch Agent Jobs"), async function () {
                         frappe.dom.freeze("Fetching agent jobs...");
-                        let r = await frm.call("fetch_agent_jobs");
-                        frappe.dom.unfreeze();
+                        let r;
+                        try {
+                            r = await frm.call("fetch_agent_jobs");
+                        } finally {
+                            frappe.dom.unfreeze();
+                        }
 
                         let jobs = r.message || [];
                         if (!jobs.length) {
@@ -106,7 +110,7 @@ frappe.ui.form.on("FC Site", {
                                 <td>${frappe.utils.escape_html(job.status)}</td>
                                 <td>${frappe.utils.escape_html(job.duration)}</td>
                                 <td>
-                                    <button class="btn btn-xs btn-default job-details-btn" data-job="${job.name}">
+                                    <button class="btn btn-xs btn-default job-details-btn" data-job="${frappe.utils.escape_html(job.name)}">
                                         ${__("Details")}
                                     </button>
                                 </td>
@@ -141,8 +145,11 @@ frappe.ui.form.on("FC Site", {
                         dialog.$wrapper.on("click", ".job-details-btn", async function () {
                             let job_name = $(this).data("job");
                             frappe.dom.freeze("Fetching job details...");
-                            await frm.call("get_agent_job_details", { job_name });
-                            frappe.dom.unfreeze();
+                            try {
+                                await frm.call("get_agent_job_details", { job_name });
+                            } finally {
+                                frappe.dom.unfreeze();
+                            }
                         });
 
                         dialog.show();
