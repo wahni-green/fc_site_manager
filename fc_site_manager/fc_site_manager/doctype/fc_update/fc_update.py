@@ -101,8 +101,8 @@ class FCUpdate(Document):
 		)
 
 		data = response.json()
-		# if dc := data.get("message"):
-		# 	self.db_set("deploy_candidate", dc)
+		if pipeline := data.get("message"):
+			self.db_set("release_pipeline", pipeline)
 
 		if data.get("exc_type"):
 			frappe.log_error(
@@ -184,6 +184,37 @@ class FCUpdate(Document):
 		for step in data.get("build_steps", []):
 			build_status += f"{step.get('stage')} - {step.get('step')}: {step.get('status')}<br>"
 		frappe.msgprint(build_status)
+
+	@frappe.whitelist()
+	def get_pipeline_status(self):
+		if not self.release_pipeline:
+			frappe.throw(_("Release Pipeline not found."))
+
+		settings = frappe.get_cached_doc("FC Settings")
+		headers = settings.get_req_headers(self.fc_team)
+
+		response = requests.post(
+			f"{settings.base_url}/api/method/press.api.client.get",
+			headers=headers,
+			json={"doctype": "Release Pipeline", "name": self.release_pipeline}
+		)
+		data = response.json().get("message")
+		if not data:
+			frappe.throw(
+				f"Release Pipeline not found. {response.text}."
+			)
+
+		stages = (data.get("steps") or {}).get("stages", [])
+
+		pipeline_status = f"Pipeline Status: {data.get('status')}"
+		pipeline_status += "<br>Stages:<br>"
+		for stage in stages:
+			pipeline_status += f"{stage.get('label')}: {stage.get('status')}<br>"
+			for build in stage.get("builds", []):
+				if build.get("name"):
+					self.db_set("deploy_candidate", build.get("name"))
+
+		frappe.msgprint(pipeline_status)
 
 	@frappe.whitelist()
 	def get_release_groups(self):

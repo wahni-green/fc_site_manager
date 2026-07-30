@@ -40,6 +40,13 @@ frappe.ui.form.on("FC Update", {
             frm.add_custom_button(__('Fetch Status'), async function() {
                 await frm.call("get_build_status");
             }, __("Actions"));
+
+            if (frm.doc.release_pipeline) {
+                frm.add_custom_button(__('Fetch Pipeline Status'), async function() {
+                    await frm.call("get_pipeline_status");
+                    frm.reload_doc();
+                }, __("Actions"));
+            }
         }
 
         if (frm.doc.docstatus == 1 && frm.doc.deployment_status == "Scheduled") {
