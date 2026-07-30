@@ -200,10 +200,11 @@ class FCUpdate(Document):
 				json={"doctype": "Release Pipeline", "name": self.release_pipeline},
 				timeout=30
 			)
+			response.raise_for_status()
+			data = response.json().get("message")
 		except requests.RequestException:
 			frappe.throw(_("Failed to reach Frappe Cloud to fetch the Release Pipeline status."))
 
-		data = response.json().get("message")
 		if not isinstance(data, dict):
 			frappe.throw(
 				f"Release Pipeline not found. {response.text}."
