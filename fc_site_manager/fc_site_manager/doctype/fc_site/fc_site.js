@@ -87,6 +87,67 @@ frappe.ui.form.on("FC Site", {
                         frappe.dom.unfreeze();
                     }, __("Tools")
                 );
+                frm.add_custom_button(
+                    __("Fetch Agent Jobs"), async function () {
+                        frappe.dom.freeze("Fetching agent jobs...");
+                        let r = await frm.call("fetch_agent_jobs");
+                        frappe.dom.unfreeze();
+
+                        let jobs = r.message || [];
+                        if (!jobs.length) {
+                            frappe.msgprint(__("No agent jobs found."));
+                            return;
+                        }
+
+                        let rows = jobs.map(job => `
+                            <tr>
+                                <td>${frappe.utils.escape_html(job.creation)}</td>
+                                <td>${frappe.utils.escape_html(job.job_type)}</td>
+                                <td>${frappe.utils.escape_html(job.status)}</td>
+                                <td>${frappe.utils.escape_html(job.duration)}</td>
+                                <td>
+                                    <button class="btn btn-xs btn-default job-details-btn" data-job="${job.name}">
+                                        ${__("Details")}
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join("");
+
+                        let dialog = new frappe.ui.Dialog({
+                            title: __("Agent Jobs"),
+                            size: "large",
+                            fields: [
+                                {
+                                    fieldname: "jobs_html",
+                                    fieldtype: "HTML",
+                                    options: `
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>${__("Created")}</th>
+                                                    <th>${__("Job Type")}</th>
+                                                    <th>${__("Status")}</th>
+                                                    <th>${__("Duration")}</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>${rows}</tbody>
+                                        </table>
+                                    `
+                                }
+                            ]
+                        });
+
+                        dialog.$wrapper.on("click", ".job-details-btn", async function () {
+                            let job_name = $(this).data("job");
+                            frappe.dom.freeze("Fetching job details...");
+                            await frm.call("get_agent_job_details", { job_name });
+                            frappe.dom.unfreeze();
+                        });
+
+                        dialog.show();
+                    }, __("Tools")
+                );
             }
         }
 

@@ -8,6 +8,7 @@ from urllib.parse import urlparse, parse_qs
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import escape_html
 
 
 class FCSite(Document):
@@ -87,6 +88,71 @@ class FCSite(Document):
 			"Workflow",
 			f"fetched users from {self.site_name}."
 		)
+
+	@frappe.whitelist()
+	def fetch_agent_jobs(self):
+		frappe.only_for("FC Admin")
+		settings = self.get_fc_settings()
+
+		response = requests.post(
+			f"{settings.base_url}/api/method/press.api.client.get_list",
+			headers=settings.get_req_headers(self.fc_team),
+			json={
+				"doctype": "Agent Job",
+				"fields": ["name", "end", "job_id", "job_type", "status", "duration", "owner", "creation"],
+				"filters": {"site": self.site_name},
+				"order_by": "creation desc",
+				"limit_page_length": 20,
+			}
+		)
+		jobs = response.json().get("message")
+		if jobs is None:
+			frappe.throw(_(f"Failed to fetch agent jobs. {response.text}."))
+
+		return jobs
+
+	@frappe.whitelist()
+	def get_agent_job_details(self, job_name):
+		frappe.only_for("FC Admin")
+		settings = self.get_fc_settings()
+
+		response = requests.post(
+			f"{settings.base_url}/api/method/press.api.client.get",
+			headers=settings.get_req_headers(self.fc_team),
+			json={"doctype": "Agent Job", "name": job_name}
+		)
+		data = response.json().get("message")
+		if not data:
+			frappe.throw(_(f"Agent Job not found. {response.text}."))
+
+		details = (
+			f"Job Type: {data.get('job_type')}<br>"
+			f"Status: {data.get('status')}<br>"
+			f"Bench: {data.get('bench')}<br>"
+			f"Server: {data.get('server')}<br>"
+			f"Start: {data.get('start')}<br>"
+			f"End: {data.get('end')}<br>"
+			f"Duration: {data.get('duration')}<br>"
+		)
+
+		if data.get("output"):
+			details += (
+				"<details><summary>Output</summary>"
+				f"<pre>{escape_html(data.get('output'))}</pre></details>"
+			)
+
+		if data.get("steps"):
+			details += "<br><b>Steps</b><br>"
+			for step in data.get("steps"):
+				details += (
+					f"<details><summary>{step.get('step_name')} - {step.get('status')} "
+					f"({step.get('duration')})</summary>"
+				)
+				if step.get("output"):
+					details += f"<pre>{escape_html(step.get('output'))}</pre>"
+				details += "</details>"
+
+		frappe.msgprint(details, title=_(f"Agent Job: {job_name}"), wide=True)
 
 	@frappe.whitelist()
 	def login_to_site(self):
