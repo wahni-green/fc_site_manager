@@ -8,6 +8,7 @@
   "section_break_xnkm",
   "bench_id",
   "deploy_candidate",
+  "release_pipeline",
   "amended_from",
   "column_break_ogov",
   "fc_team",
@@ -82,6 +83,12 @@
    "fieldname": "deploy_candidate",
    "fieldtype": "Data",
    "label": "Deploy Candidate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "release_pipeline",
+   "fieldtype": "Data",
+   "label": "Release Pipeline",
    "read_only": 1
   },
   {

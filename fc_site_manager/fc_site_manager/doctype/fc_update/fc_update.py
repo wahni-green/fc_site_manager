@@ -5,7 +5,7 @@ import requests
 
 import frappe
 from frappe import _
-from frappe.utils.data import cint, get_datetime, now_datetime, format_datetime
+from frappe.utils.data import cint, escape_html, get_datetime, now_datetime, format_datetime
 from frappe.model.document import Document
 
 
@@ -101,8 +101,8 @@ class FCUpdate(Document):
 		)
 
 		data = response.json()
-		# if dc := data.get("message"):
-		# 	self.db_set("deploy_candidate", dc)
+		if pipeline := data.get("message"):
+			self.db_set("release_pipeline", pipeline)
 
 		if data.get("exc_type"):
 			frappe.log_error(
@@ -184,6 +184,53 @@ class FCUpdate(Document):
 		for step in data.get("build_steps", []):
 			build_status += f"{step.get('stage')} - {step.get('step')}: {step.get('status')}<br>"
 		frappe.msgprint(build_status)
+
+	@frappe.whitelist()
+	def get_pipeline_status(self):
+		if not self.release_pipeline:
+			frappe.throw(_("Release Pipeline not found."))
+
+		settings = frappe.get_cached_doc("FC Settings")
+		headers = settings.get_req_headers(self.fc_team)
+
+		try:
+			response = requests.post(
+				f"{settings.base_url}/api/method/press.api.client.get",
+				headers=headers,
+				json={"doctype": "Release Pipeline", "name": self.release_pipeline},
+				timeout=30
+			)
+			response.raise_for_status()
+			data = response.json().get("message")
+		except requests.RequestException:
+			frappe.throw(_("Failed to reach Frappe Cloud to fetch the Release Pipeline status."))
+
+		if not isinstance(data, dict):
+			frappe.throw(
+				f"Release Pipeline not found. {response.text}."
+			)
+
+		steps = data.get("steps")
+		stages = steps.get("stages", []) if isinstance(steps, dict) else []
+		if not isinstance(stages, list):
+			stages = []
+
+		pipeline_status = f"Pipeline Status: {escape_html(data.get('status'))}"
+		pipeline_status += "<br>Stages:<br>"
+		deploy_candidate = None
+		for stage in stages:
+			if not isinstance(stage, dict):
+				continue
+
+			pipeline_status += f"{escape_html(stage.get('label'))}: {escape_html(stage.get('status'))}<br>"
+			for build in stage.get("builds", []):
+				if isinstance(build, dict) and build.get("name"):
+					deploy_candidate = build.get("name")
+
+		if deploy_candidate:
+			self.db_set("deploy_candidate", deploy_candidate)
+
+		frappe.msgprint(pipeline_status)
 
 	@frappe.whitelist()
 	def get_release_groups(self):
