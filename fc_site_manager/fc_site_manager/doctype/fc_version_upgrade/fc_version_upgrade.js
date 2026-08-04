@@ -12,7 +12,13 @@ frappe.ui.form.on("FC Version Upgrade", {
 
 			if (frm.doc.has_existing_benches) {
 				frm.add_custom_button(__("Choose Existing Bench"), async function() {
-					let r = await frm.call("get_existing_benches");
+					frappe.dom.freeze();
+					let r;
+					try {
+						r = await frm.call("get_existing_benches");
+					} finally {
+						frappe.dom.unfreeze();
+					}
 					let options = r.message || [];
 					if (!options.length) {
 						frappe.msgprint(__("No existing benches found."));
