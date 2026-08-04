@@ -127,7 +127,6 @@ class FCVersionUpgrade(Document):
 		headers = settings.get_req_headers(self.fc_team)
 
 		self.destination_group = None
-		self.destination_group_title = None
 
 		self.is_public_group = 1 if self.is_current_group_public(settings, headers) else 0
 		if self.is_public_group:
@@ -152,15 +151,16 @@ class FCVersionUpgrade(Document):
 			frappe.throw(_("Failed to reach Frappe Cloud to check for an existing upgrade bench."))
 
 		existing = self.raise_for_api_error(response).get("message") or {}
-		if existing.get("benches"):
+		benches = existing.get("benches")
+		if benches:
 			self.has_existing_benches = 1
 			self.set("apps", [])
 			self.can_upgrade = 1
 			frappe.msgprint(
-				_("Existing bench(es) for the target version were found. Use 'Choose Existing Bench' to select one."),
+				_("Existing bench(es) for the target version were found. Choose one in Destination Bench."),
 				indicator="blue"
 			)
-			return
+			return self.format_bench_options(benches)
 
 		self.has_existing_benches = 0
 
@@ -232,24 +232,7 @@ class FCVersionUpgrade(Document):
 
 		return [b.get("name") for b in branches]
 
-	@frappe.whitelist()
-	def get_existing_benches(self):
-		settings = self.get_fc_settings()
-		headers = settings.get_req_headers(self.fc_team)
-
-		try:
-			response = requests.post(
-				f"{settings.base_url}/api/method/press.api.version_upgrade.check_existing_upgrade_bench",
-				headers=headers,
-				json={"name": self.site, "version": self.current_version},
-				timeout=30
-			)
-		except requests.RequestException:
-			frappe.throw(_("Failed to reach Frappe Cloud to fetch existing benches."))
-
-		data = self.raise_for_api_error(response).get("message") or {}
-		benches = data.get("benches") or []
-
+	def format_bench_options(self, benches):
 		return [
 			{
 				"label": bench.get("release_group_title") or bench.get("bench_name") or bench.get("release_group"),
