@@ -1,6 +1,8 @@
 # Copyright (c) 2026, Wahni IT Solutions Pvt Ltd and Contributors
 # See license.txt
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_to_date, now_datetime
@@ -47,7 +49,10 @@ class IntegrationTestFCVersionUpgrade(IntegrationTestCase):
 		self.assertIsNone(doc.get_scheduled_time_ist())
 
 	def test_get_scheduled_time_ist_converts_to_kolkata(self):
-		doc = self.new_upgrade(add_to_date(now_datetime(), minutes=30))
-		result = doc.get_scheduled_time_ist()
-		self.assertIsNotNone(result)
-		self.assertRegex(result, r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$")
+		doc = self.new_upgrade("2026-01-15 10:00:00")
+		with patch(
+			"fc_site_manager.fc_site_manager.doctype.fc_version_upgrade.fc_version_upgrade.get_system_timezone",
+			return_value="America/New_York",
+		):
+			result = doc.get_scheduled_time_ist()
+		self.assertEqual(result, "2026-01-15T20:30")
