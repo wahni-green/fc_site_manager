@@ -25,6 +25,11 @@ class FCVersionUpgrade(Document):
 		if getattr(self, "_action", None) != "submit":
 			return
 
+		# Lock the site's row for the rest of this transaction so a second,
+		# concurrent submission for the same site blocks here instead of
+		# racing this one past the check below.
+		frappe.db.get_value("FC Site", self.site, "name", for_update=True)
+
 		duplicate = frappe.db.exists(
 			"FC Version Upgrade",
 			{
