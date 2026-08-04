@@ -127,7 +127,6 @@ class FCVersionUpgrade(Document):
 		headers = settings.get_req_headers(self.fc_team)
 
 		self.destination_group = None
-		self.destination_group_title = None
 
 		self.is_public_group = 1 if self.is_current_group_public(settings, headers) else 0
 		if self.is_public_group:
@@ -157,7 +156,7 @@ class FCVersionUpgrade(Document):
 			self.set("apps", [])
 			self.can_upgrade = 1
 			frappe.msgprint(
-				_("Existing bench(es) for the target version were found. Use 'Choose Existing Bench' to select one."),
+				_("Existing bench(es) for the target version were found. Choose one in Destination Bench."),
 				indicator="blue"
 			)
 			return
