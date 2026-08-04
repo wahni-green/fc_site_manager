@@ -1,0 +1,95 @@
+// Copyright (c) 2026, Wahni IT Solutions Pvt Ltd and contributors
+// For license information, please see license.txt
+
+frappe.ui.form.on("FC Version Upgrade", {
+	refresh(frm) {
+		if (frm.doc.docstatus == 0 && !frm.doc.__islocal) {
+			frm.add_custom_button(__("Check Compatibility"), async function() {
+				frappe.dom.freeze();
+				try {
+					await frm.call("check_compatibility");
+				} finally {
+					frappe.dom.unfreeze();
+				}
+				frm.dirty();
+				frm.refresh();
+			}, __("Actions"));
+
+			if (frm.doc.has_existing_benches) {
+				frm.add_custom_button(__("Choose Existing Bench"), async function() {
+					frappe.dom.freeze();
+					let r;
+					try {
+						r = await frm.call("get_existing_benches");
+					} finally {
+						frappe.dom.unfreeze();
+					}
+					let options = r.message || [];
+					if (!options.length) {
+						frappe.msgprint(__("No existing benches found."));
+						return;
+					}
+					let dialog = new frappe.ui.Dialog({
+						title: __("Choose Existing Bench"),
+						fields: [
+							{
+								fieldname: "destination_group",
+								fieldtype: "Select",
+								label: __("Bench"),
+								options: options,
+								default: frm.doc.destination_group,
+								reqd: 1
+							}
+						],
+						primary_action_label: __("Set Bench"),
+						primary_action(values) {
+							let selected = options.find((o) => o.value === values.destination_group);
+							frm.set_value("destination_group", values.destination_group);
+							frm.set_value("destination_group_title", selected ? selected.label : values.destination_group);
+							dialog.hide();
+						}
+					});
+					dialog.show();
+				}, __("Actions"));
+			}
+		}
+
+		if (frm.doc.docstatus == 1 && frm.doc.release_group) {
+			frm.add_custom_button(__("Fetch Status"), async function() {
+				await frm.call("get_upgrade_status");
+			}, __("Actions"));
+		}
+	},
+});
+
+frappe.ui.form.on("FC Version Upgrade App", {
+	fetch_branches(frm, cdt, cdn) {
+		let row = locals[cdt][cdn];
+		frappe.dom.freeze();
+		frm.call("get_app_branches", { app: row.app })
+			.then((r) => {
+				frappe.dom.unfreeze();
+				let branches = r.message || [];
+				let dialog = new frappe.ui.Dialog({
+					title: __("Choose Branch for {0}", [row.app]),
+					fields: [
+						{
+							fieldname: "branch",
+							fieldtype: "Select",
+							label: __("Branch"),
+							options: branches,
+							default: row.branch,
+							reqd: 1
+						}
+					],
+					primary_action_label: __("Set Branch"),
+					primary_action(values) {
+						frappe.model.set_value(cdt, cdn, "branch", values.branch);
+						dialog.hide();
+					}
+				});
+				dialog.show();
+			})
+			.catch(() => frappe.dom.unfreeze());
+	}
+});

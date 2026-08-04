@@ -164,5 +164,12 @@ frappe.ui.form.on("FC Site", {
                 frappe.new_doc("FC Update", { "bench_id": frm.doc.bench_id, "fc_team": frm.doc.fc_team });
             }, __("Tools")
         );
+
+        frm.add_custom_button(
+            __("Upgrade Version"),
+            async function () {
+                frappe.new_doc("FC Version Upgrade", { "site": frm.doc.name });
+            }, __("Tools")
+        );
 	},
 });

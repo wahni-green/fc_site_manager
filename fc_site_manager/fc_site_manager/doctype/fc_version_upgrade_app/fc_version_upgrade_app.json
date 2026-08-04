@@ -1,0 +1,125 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-04 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "title",
+  "incompatible",
+  "column_break_kqzp",
+  "current_branch",
+  "branch",
+  "fetch_branches",
+  "section_break_wvbn",
+  "source",
+  "column_break_rtde",
+  "repository",
+  "repository_owner",
+  "repository_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "App",
+   "no_copy": 1,
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "incompatible",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Incompatible",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_kqzp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "current_branch",
+   "fieldtype": "Data",
+   "label": "Current Branch",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Branch To Deploy",
+   "no_copy": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "fetch_branches",
+   "fieldtype": "Button",
+   "label": "Fetch Branches"
+  },
+  {
+   "fieldname": "section_break_wvbn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rtde",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "repository",
+   "fieldtype": "Data",
+   "label": "Repository",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "repository_owner",
+   "fieldtype": "Data",
+   "label": "Repository Owner",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "repository_url",
+   "fieldtype": "Data",
+   "label": "Repository URL",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-04 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "FC Site Manager",
+ "name": "FC Version Upgrade App",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
