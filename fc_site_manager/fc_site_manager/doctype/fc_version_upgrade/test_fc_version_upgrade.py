@@ -1,7 +1,10 @@
 # Copyright (c) 2026, Wahni IT Solutions Pvt Ltd and Contributors
 # See license.txt
 
+from types import SimpleNamespace
 from unittest.mock import patch
+
+import requests
 
 import frappe
 from frappe.tests import IntegrationTestCase
@@ -56,3 +59,34 @@ class IntegrationTestFCVersionUpgrade(IntegrationTestCase):
 		):
 			result = doc.get_scheduled_time_ist()
 		self.assertEqual(result, "2026-01-15T20:30")
+
+	def fake_settings(self):
+		return SimpleNamespace(base_url="https://example.com", get_req_headers=lambda team: {})
+
+	def test_initiate_upgrade_does_not_commit_before_raising(self):
+		doc = self.new_upgrade(None)
+		doc.release_group_title = "Test Upgrade"
+		doc.append("apps", {
+			"app": "test_app",
+			"branch": "main",
+			"repository_url": "https://github.com/example/test_app",
+		})
+
+		with patch.object(doc, "get_fc_settings", return_value=self.fake_settings()), patch(
+			"fc_site_manager.fc_site_manager.doctype.fc_version_upgrade.fc_version_upgrade.requests.post",
+			side_effect=requests.RequestException("network down"),
+		), patch("frappe.db.commit") as mock_commit:
+			self.assertRaises(frappe.ValidationError, doc.initiate_upgrade)
+			mock_commit.assert_not_called()
+
+	def test_upgrade_via_existing_bench_does_not_commit_before_raising(self):
+		doc = self.new_upgrade(None)
+		doc.has_existing_benches = 1
+		doc.destination_group = "bench-1"
+
+		with patch.object(doc, "get_fc_settings", return_value=self.fake_settings()), patch(
+			"fc_site_manager.fc_site_manager.doctype.fc_version_upgrade.fc_version_upgrade.requests.post",
+			side_effect=requests.RequestException("network down"),
+		), patch("frappe.db.commit") as mock_commit:
+			self.assertRaises(frappe.ValidationError, doc.upgrade_via_existing_bench)
+			mock_commit.assert_not_called()

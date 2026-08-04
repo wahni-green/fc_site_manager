@@ -144,7 +144,7 @@
    "in_list_view": 1,
    "label": "Upgrade Status",
    "no_copy": 1,
-   "options": "\nScheduled\nInitiated\nFailed",
+   "options": "\nScheduled\nInitiated",
    "read_only": 1
   },
   {

@@ -76,16 +76,29 @@ class FCVersionUpgrade(Document):
 		if not data.get("exc_type"):
 			return data
 
-		message = data.get("exc_type")
-		if server_messages := data.get("_server_messages"):
-			try:
-				for raw in json.loads(server_messages):
-					message = json.loads(raw).get("message", message)
-			except ValueError:
-				pass
-
 		frappe.log_error("FC Version Upgrade Failed", response.text)
-		frappe.throw(message)
+
+		messages = []
+		try:
+			raw_messages = json.loads(data.get("_server_messages") or "[]")
+		except (ValueError, TypeError):
+			raw_messages = []
+
+		for raw in raw_messages:
+			try:
+				parsed = json.loads(raw)
+			except (ValueError, TypeError):
+				continue
+			msg = parsed.get("message") if isinstance(parsed, dict) else None
+			if msg:
+				messages.append(msg)
+
+		if not messages:
+			frappe.throw(
+				_("Version upgrade failed ({0}). Check the Error Log for details.").format(data.get("exc_type"))
+			)
+
+		frappe.throw("<br>".join(messages))
 
 	def is_current_group_public(self, settings, headers):
 		site = frappe.get_cached_doc("FC Site", self.site)
@@ -114,9 +127,6 @@ class FCVersionUpgrade(Document):
 		system_tz = pytz_timezone(get_system_timezone())
 		ist = system_tz.localize(when).astimezone(pytz_timezone("Asia/Kolkata"))
 		return ist.strftime("%Y-%m-%dT%H:%M")
-
-	def mark_upgrade_failed(self):
-		self.db_set("upgrade_status", "Failed", commit=True)
 
 	@frappe.whitelist()
 	def check_compatibility(self):
@@ -284,17 +294,12 @@ class FCVersionUpgrade(Document):
 				timeout=60
 			)
 		except requests.RequestException:
-			self.mark_upgrade_failed()
 			frappe.throw(_("Failed to reach Frappe Cloud to initiate the version upgrade."))
 
-		try:
-			data = self.raise_for_api_error(response)
-			release_group = data.get("message")
-			if not release_group:
-				frappe.throw(_("Failed to initiate version upgrade. {0}").format(response.text))
-		except frappe.ValidationError:
-			self.mark_upgrade_failed()
-			raise
+		data = self.raise_for_api_error(response)
+		release_group = data.get("message")
+		if not release_group:
+			frappe.throw(_("Failed to initiate version upgrade. {0}").format(response.text))
 
 		self.db_set("release_group", release_group)
 		self.db_set("upgrade_status", "Scheduled" if scheduled_time else "Initiated")
@@ -325,14 +330,9 @@ class FCVersionUpgrade(Document):
 				timeout=60
 			)
 		except requests.RequestException:
-			self.mark_upgrade_failed()
 			frappe.throw(_("Failed to reach Frappe Cloud to initiate the version upgrade."))
 
-		try:
-			self.raise_for_api_error(response)
-		except frappe.ValidationError:
-			self.mark_upgrade_failed()
-			raise
+		self.raise_for_api_error(response)
 
 		if self.destination_group:
 			self.db_set("release_group", self.destination_group)
