@@ -7,7 +7,40 @@ frappe.ui.form.on("FC Version Upgrade", {
 			frm.add_custom_button(__("Check Compatibility"), async function() {
 				await frm.call("check_compatibility");
 				frm.dirty();
+				frm.refresh();
 			}, __("Actions"));
+
+			if (frm.doc.has_existing_benches) {
+				frm.add_custom_button(__("Choose Existing Bench"), async function() {
+					let r = await frm.call("get_existing_benches");
+					let options = r.message || [];
+					if (!options.length) {
+						frappe.msgprint(__("No existing benches found."));
+						return;
+					}
+					let dialog = new frappe.ui.Dialog({
+						title: __("Choose Existing Bench"),
+						fields: [
+							{
+								fieldname: "destination_group",
+								fieldtype: "Select",
+								label: __("Bench"),
+								options: options,
+								default: frm.doc.destination_group,
+								reqd: 1
+							}
+						],
+						primary_action_label: __("Set Bench"),
+						primary_action(values) {
+							let selected = options.find((o) => o.value === values.destination_group);
+							frm.set_value("destination_group", values.destination_group);
+							frm.set_value("destination_group_title", selected ? selected.label : values.destination_group);
+							dialog.hide();
+						}
+					});
+					dialog.show();
+				}, __("Actions"));
+			}
 		}
 
 		if (frm.doc.docstatus == 1 && frm.doc.release_group) {

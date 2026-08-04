@@ -4,11 +4,12 @@
 import json
 
 import requests
+from pytz import timezone as pytz_timezone
 
 import frappe
 from frappe import _
 from frappe.utils import escape_html
-from frappe.utils.data import get_datetime, now_datetime
+from frappe.utils.data import get_datetime, get_system_timezone, now_datetime
 from frappe.model.document import Document
 
 
@@ -62,6 +63,33 @@ class FCVersionUpgrade(Document):
 		frappe.log_error("FC Version Upgrade Failed", response.text)
 		frappe.throw(message)
 
+	def is_current_group_public(self, settings, headers):
+		site = frappe.get_cached_doc("FC Site", self.site)
+
+		try:
+			response = requests.post(
+				f"{settings.base_url}/api/method/press.api.client.get",
+				headers=headers,
+				json={"doctype": "Release Group", "name": site.bench_id},
+				timeout=30
+			)
+		except requests.RequestException:
+			frappe.throw(_("Failed to reach Frappe Cloud to check the release group."))
+
+		data = self.raise_for_api_error(response).get("message")
+		if not data:
+			frappe.throw(_("Release Group not found. {0}").format(response.text))
+
+		return bool(data.get("public"))
+
+	def get_scheduled_time_ist(self):
+		is_scheduled = bool(self.scheduled_datetime) and get_datetime(self.scheduled_datetime) > now_datetime()
+		when = get_datetime(self.scheduled_datetime) if is_scheduled else now_datetime()
+
+		system_tz = pytz_timezone(get_system_timezone())
+		ist = system_tz.localize(when).astimezone(pytz_timezone("Asia/Kolkata"))
+		return is_scheduled, ist.strftime("%Y-%m-%dT%H:%M")
+
 	@frappe.whitelist()
 	def check_compatibility(self):
 		if self.docstatus != 0:
@@ -69,6 +97,20 @@ class FCVersionUpgrade(Document):
 
 		settings = self.get_fc_settings()
 		headers = settings.get_req_headers(self.fc_team)
+
+		self.destination_group = None
+		self.destination_group_title = None
+
+		self.is_public_group = 1 if self.is_current_group_public(settings, headers) else 0
+		if self.is_public_group:
+			self.has_existing_benches = 0
+			self.set("apps", [])
+			self.can_upgrade = 1
+			frappe.msgprint(
+				_("This site is on a public bench group. It will be upgraded directly to the next version.")
+			)
+			return
+
 		payload = {"name": self.site, "version": self.current_version}
 
 		try:
@@ -83,12 +125,16 @@ class FCVersionUpgrade(Document):
 
 		existing = self.raise_for_api_error(response).get("message") or {}
 		if existing.get("benches"):
+			self.has_existing_benches = 1
+			self.set("apps", [])
+			self.can_upgrade = 1
 			frappe.msgprint(
-				_("An upgrade bench already exists for this site: {0}").format(
-					", ".join(existing.get("benches"))
-				),
-				indicator="orange"
+				_("Existing bench(es) for the target version were found. Use 'Choose Existing Bench' to select one."),
+				indicator="blue"
 			)
+			return
+
+		self.has_existing_benches = 0
 
 		try:
 			response = requests.post(
@@ -158,7 +204,40 @@ class FCVersionUpgrade(Document):
 
 		return [b.get("name") for b in branches]
 
+	@frappe.whitelist()
+	def get_existing_benches(self):
+		settings = self.get_fc_settings()
+		headers = settings.get_req_headers(self.fc_team)
+
+		try:
+			response = requests.post(
+				f"{settings.base_url}/api/method/press.api.version_upgrade.check_existing_upgrade_bench",
+				headers=headers,
+				json={"name": self.site, "version": self.current_version},
+				timeout=30
+			)
+		except requests.RequestException:
+			frappe.throw(_("Failed to reach Frappe Cloud to fetch existing benches."))
+
+		data = self.raise_for_api_error(response).get("message") or {}
+		benches = data.get("benches") or []
+
+		return [
+			{
+				"label": bench.get("release_group_title") or bench.get("bench_name") or bench.get("release_group"),
+				"value": bench.get("release_group"),
+			}
+			for bench in benches
+		]
+
 	def initiate_upgrade(self):
+		if self.is_public_group or self.has_existing_benches:
+			self.upgrade_via_existing_bench()
+			return
+
+		if not self.release_group_title:
+			frappe.throw(_("Please set a New Release Group Title before submitting."))
+
 		if not self.apps:
 			frappe.throw(_("Please check app compatibility before submitting."))
 
@@ -174,8 +253,7 @@ class FCVersionUpgrade(Document):
 			for row in self.apps
 		]
 
-		is_scheduled = bool(self.scheduled_datetime) and get_datetime(self.scheduled_datetime) > now_datetime()
-		scheduled_time = get_datetime(self.scheduled_datetime) if is_scheduled else now_datetime()
+		is_scheduled, scheduled_time = self.get_scheduled_time_ist()
 
 		try:
 			response = requests.post(
@@ -186,7 +264,7 @@ class FCVersionUpgrade(Document):
 					"version": self.current_version,
 					"release_group_title": self.release_group_title,
 					"custom_app_sources": custom_app_sources,
-					"scheduled_time": scheduled_time.strftime("%Y-%m-%dT%H:%M"),
+					"scheduled_time": scheduled_time,
 					"skip_failing_patches": bool(self.skip_failing_patches),
 					"skip_backups": bool(self.skip_backups),
 				},
@@ -201,6 +279,38 @@ class FCVersionUpgrade(Document):
 			frappe.throw(_("Failed to initiate version upgrade. {0}").format(response.text))
 
 		self.db_set("release_group", release_group)
+		self.db_set("upgrade_status", "Scheduled" if is_scheduled else "Initiated")
+		frappe.msgprint(_("Version upgrade initiated successfully."))
+
+	def upgrade_via_existing_bench(self):
+		if self.has_existing_benches and not self.destination_group:
+			frappe.throw(_("Please choose an existing bench before submitting."))
+
+		settings = self.get_fc_settings()
+		headers = settings.get_req_headers(self.fc_team)
+
+		is_scheduled, scheduled_time = self.get_scheduled_time_ist()
+
+		try:
+			response = requests.post(
+				f"{settings.base_url}/api/method/press.api.version_upgrade.version_upgrade",
+				headers=headers,
+				json={
+					"name": self.site,
+					"destination_group": self.destination_group or None,
+					"skip_failing_patches": bool(self.skip_failing_patches),
+					"skip_backups": bool(self.skip_backups),
+					"scheduled_datetime": scheduled_time,
+				},
+				timeout=60
+			)
+		except requests.RequestException:
+			frappe.throw(_("Failed to reach Frappe Cloud to initiate the version upgrade."))
+
+		self.raise_for_api_error(response)
+
+		if self.destination_group:
+			self.db_set("release_group", self.destination_group)
 		self.db_set("upgrade_status", "Scheduled" if is_scheduled else "Initiated")
 		frappe.msgprint(_("Version upgrade initiated successfully."))
 

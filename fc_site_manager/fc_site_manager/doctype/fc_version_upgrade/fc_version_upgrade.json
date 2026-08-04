@@ -13,9 +13,13 @@
   "current_version",
   "requested_by",
   "section_break_bnch",
+  "is_public_group",
+  "has_existing_benches",
+  "destination_group",
+  "destination_group_title",
+  "column_break_rlgp",
   "release_group_title",
   "can_upgrade",
-  "column_break_rlgp",
   "release_group",
   "upgrade_status",
   "section_break_sdvq",
@@ -83,10 +87,49 @@
    "label": "New Bench"
   },
   {
+   "default": "0",
+   "description": "The site's current bench is on a public group. It will be moved directly to the next version without creating a new bench.",
+   "fieldname": "is_public_group",
+   "fieldtype": "Check",
+   "label": "Is Public Group",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Existing bench(es) for the target version were found. Use 'Choose Existing Bench' to select one instead of creating a new bench.",
+   "fieldname": "has_existing_benches",
+   "fieldtype": "Check",
+   "label": "Has Existing Benches",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.has_existing_benches",
+   "fieldname": "destination_group",
+   "fieldtype": "Data",
+   "label": "Destination Bench",
+   "mandatory_depends_on": "eval:doc.has_existing_benches",
+   "no_copy": 1
+  },
+  {
+   "depends_on": "eval:doc.has_existing_benches",
+   "fieldname": "destination_group_title",
+   "fieldtype": "Data",
+   "label": "Destination Bench Title",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rlgp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:!doc.is_public_group && !doc.has_existing_benches",
    "fieldname": "release_group_title",
    "fieldtype": "Data",
    "label": "New Release Group Title",
-   "reqd": 1
+   "mandatory_depends_on": "eval:!doc.is_public_group && !doc.has_existing_benches"
   },
   {
    "default": "0",
@@ -95,10 +138,6 @@
    "label": "Can Upgrade",
    "no_copy": 1,
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_rlgp",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "release_group",
@@ -145,6 +184,8 @@
    "label": "Skip Backups"
   },
   {
+   "depends_on": "eval:!doc.is_public_group && !doc.has_existing_benches",
+   "description": "Only used when a new private bench is being created for this upgrade.",
    "fieldname": "section_break_kysk",
    "fieldtype": "Section Break",
    "label": "Custom Apps"
