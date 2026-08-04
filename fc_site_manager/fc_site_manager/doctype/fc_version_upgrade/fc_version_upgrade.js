@@ -28,15 +28,15 @@ frappe.ui.form.on("FC Version Upgrade", {
 		if (frm.doc.docstatus == 0 && !frm.doc.__islocal) {
 			frm.add_custom_button(__("Check Compatibility"), async function() {
 				frappe.dom.freeze();
+				let r;
 				try {
-					await frm.call("check_compatibility");
-
-					if (frm.doc.has_existing_benches) {
-						let r = await frm.call("get_existing_benches");
-						set_destination_group_options(frm, r.message || []);
-					}
+					r = await frm.call("check_compatibility");
 				} finally {
 					frappe.dom.unfreeze();
+				}
+
+				if (frm.doc.has_existing_benches) {
+					set_destination_group_options(frm, r.message || []);
 				}
 				frm.dirty();
 				frm.refresh();
