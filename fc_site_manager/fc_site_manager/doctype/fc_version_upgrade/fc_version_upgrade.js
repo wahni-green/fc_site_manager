@@ -5,7 +5,12 @@ frappe.ui.form.on("FC Version Upgrade", {
 	refresh(frm) {
 		if (frm.doc.docstatus == 0 && !frm.doc.__islocal) {
 			frm.add_custom_button(__("Check Compatibility"), async function() {
-				await frm.call("check_compatibility");
+				frappe.dom.freeze();
+				try {
+					await frm.call("check_compatibility");
+				} finally {
+					frappe.dom.unfreeze();
+				}
 				frm.dirty();
 				frm.refresh();
 			}, __("Actions"));

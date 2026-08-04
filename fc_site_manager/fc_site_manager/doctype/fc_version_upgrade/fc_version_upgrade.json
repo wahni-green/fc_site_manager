@@ -78,7 +78,7 @@
    "fieldtype": "Link",
    "label": "Requested By",
    "options": "User",
-   "read_only_depends_on": "requested_by",
+   "read_only_depends_on": "eval:!doc.__islocal",
    "reqd": 1
   },
   {
