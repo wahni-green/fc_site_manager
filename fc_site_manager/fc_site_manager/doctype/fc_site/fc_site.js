@@ -168,7 +168,7 @@ frappe.ui.form.on("FC Site", {
         frm.add_custom_button(
             __("Upgrade Version"),
             async function () {
-                frappe.new_doc("FC Version Upgrade", { "site": frm.doc.name });
+                frappe.new_doc("FC Version Upgrade", { "site": frm.doc.name, "fc_team": frm.doc.fc_team });
             }, __("Tools")
         );
 	},
