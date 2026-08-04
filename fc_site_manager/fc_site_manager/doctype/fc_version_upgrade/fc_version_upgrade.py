@@ -81,14 +81,15 @@ class FCVersionUpgrade(Document):
 		messages = []
 		try:
 			raw_messages = json.loads(data.get("_server_messages") or "[]")
-		except ValueError:
+		except (ValueError, TypeError):
 			raw_messages = []
 
 		for raw in raw_messages:
 			try:
-				msg = json.loads(raw).get("message")
-			except ValueError:
+				parsed = json.loads(raw)
+			except (ValueError, TypeError):
 				continue
+			msg = parsed.get("message") if isinstance(parsed, dict) else None
 			if msg:
 				messages.append(msg)
 
