@@ -19,9 +19,28 @@ class FCVersionUpgrade(Document):
 			self.fetch_site_details()
 
 		self.validate_scheduled_datetime()
+		self.validate_duplicate_upgrade()
+
+	def validate_duplicate_upgrade(self):
+		if getattr(self, "_action", None) != "submit":
+			return
+
+		duplicate = frappe.db.exists(
+			"FC Version Upgrade",
+			{
+				"site": self.site,
+				"docstatus": 1,
+				"upgrade_status": ["in", ["Scheduled", "Initiated"]],
+				"name": ["!=", self.name],
+			},
+		)
+		if duplicate:
+			frappe.throw(
+				_("Another version upgrade ({0}) is already in progress for this site.").format(duplicate)
+			)
 
 	def validate_scheduled_datetime(self):
-		if not self.scheduled_datetime or self.docstatus != 0:
+		if not self.scheduled_datetime or getattr(self, "_action", None) == "cancel":
 			return
 
 		if get_datetime(self.scheduled_datetime) <= now_datetime():
@@ -83,12 +102,16 @@ class FCVersionUpgrade(Document):
 		return bool(data.get("public"))
 
 	def get_scheduled_time_ist(self):
-		is_scheduled = bool(self.scheduled_datetime) and get_datetime(self.scheduled_datetime) > now_datetime()
-		when = get_datetime(self.scheduled_datetime) if is_scheduled else now_datetime()
+		if not self.scheduled_datetime:
+			return None
 
+		when = get_datetime(self.scheduled_datetime)
 		system_tz = pytz_timezone(get_system_timezone())
 		ist = system_tz.localize(when).astimezone(pytz_timezone("Asia/Kolkata"))
-		return is_scheduled, ist.strftime("%Y-%m-%dT%H:%M")
+		return ist.strftime("%Y-%m-%dT%H:%M")
+
+	def mark_upgrade_failed(self):
+		self.db_set("upgrade_status", "Failed", commit=True)
 
 	@frappe.whitelist()
 	def check_compatibility(self):
@@ -253,33 +276,40 @@ class FCVersionUpgrade(Document):
 			for row in self.apps
 		]
 
-		is_scheduled, scheduled_time = self.get_scheduled_time_ist()
+		scheduled_time = self.get_scheduled_time_ist()
+		payload = {
+			"name": self.site,
+			"version": self.current_version,
+			"release_group_title": self.release_group_title,
+			"custom_app_sources": custom_app_sources,
+			"skip_failing_patches": bool(self.skip_failing_patches),
+			"skip_backups": bool(self.skip_backups),
+		}
+		if scheduled_time:
+			payload["scheduled_time"] = scheduled_time
 
 		try:
 			response = requests.post(
 				f"{settings.base_url}/api/method/press.api.version_upgrade.create_private_bench_for_site_upgrade",
 				headers=headers,
-				json={
-					"name": self.site,
-					"version": self.current_version,
-					"release_group_title": self.release_group_title,
-					"custom_app_sources": custom_app_sources,
-					"scheduled_time": scheduled_time,
-					"skip_failing_patches": bool(self.skip_failing_patches),
-					"skip_backups": bool(self.skip_backups),
-				},
+				json=payload,
 				timeout=60
 			)
 		except requests.RequestException:
+			self.mark_upgrade_failed()
 			frappe.throw(_("Failed to reach Frappe Cloud to initiate the version upgrade."))
 
-		data = self.raise_for_api_error(response)
-		release_group = data.get("message")
-		if not release_group:
-			frappe.throw(_("Failed to initiate version upgrade. {0}").format(response.text))
+		try:
+			data = self.raise_for_api_error(response)
+			release_group = data.get("message")
+			if not release_group:
+				frappe.throw(_("Failed to initiate version upgrade. {0}").format(response.text))
+		except frappe.ValidationError:
+			self.mark_upgrade_failed()
+			raise
 
 		self.db_set("release_group", release_group)
-		self.db_set("upgrade_status", "Scheduled" if is_scheduled else "Initiated")
+		self.db_set("upgrade_status", "Scheduled" if scheduled_time else "Initiated")
 		frappe.msgprint(_("Version upgrade initiated successfully."))
 
 	def upgrade_via_existing_bench(self):
@@ -289,29 +319,36 @@ class FCVersionUpgrade(Document):
 		settings = self.get_fc_settings()
 		headers = settings.get_req_headers(self.fc_team)
 
-		is_scheduled, scheduled_time = self.get_scheduled_time_ist()
+		scheduled_time = self.get_scheduled_time_ist()
+		payload = {
+			"name": self.site,
+			"destination_group": self.destination_group or None,
+			"skip_failing_patches": bool(self.skip_failing_patches),
+			"skip_backups": bool(self.skip_backups),
+		}
+		if scheduled_time:
+			payload["scheduled_datetime"] = scheduled_time
 
 		try:
 			response = requests.post(
 				f"{settings.base_url}/api/method/press.api.version_upgrade.version_upgrade",
 				headers=headers,
-				json={
-					"name": self.site,
-					"destination_group": self.destination_group or None,
-					"skip_failing_patches": bool(self.skip_failing_patches),
-					"skip_backups": bool(self.skip_backups),
-					"scheduled_datetime": scheduled_time,
-				},
+				json=payload,
 				timeout=60
 			)
 		except requests.RequestException:
+			self.mark_upgrade_failed()
 			frappe.throw(_("Failed to reach Frappe Cloud to initiate the version upgrade."))
 
-		self.raise_for_api_error(response)
+		try:
+			self.raise_for_api_error(response)
+		except frappe.ValidationError:
+			self.mark_upgrade_failed()
+			raise
 
 		if self.destination_group:
 			self.db_set("release_group", self.destination_group)
-		self.db_set("upgrade_status", "Scheduled" if is_scheduled else "Initiated")
+		self.db_set("upgrade_status", "Scheduled" if scheduled_time else "Initiated")
 		frappe.msgprint(_("Version upgrade initiated successfully."))
 
 	@frappe.whitelist()
@@ -346,7 +383,9 @@ class FCVersionUpgrade(Document):
 		if benches:
 			status += "Benches:<br>"
 			for bench in benches:
-				status += f"{escape_html(bench.get('name'))}: {escape_html(bench.get('status'))}<br>"
+				name = escape_html(str(bench.get("name") or ""))
+				bench_status = escape_html(str(bench.get("status") or ""))
+				status += f"{name}: {bench_status}<br>"
 		else:
 			status += "No bench created yet. It may still be queued."
 
