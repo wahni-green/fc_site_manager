@@ -51,7 +51,8 @@ class FCUpdate(Document):
 		self.initiate_deployment()
 
 	def on_cancel(self):
-		frappe.thow("FC Update cannot be cancelled.")
+		if self.deployment_status != "Initiated":
+			frappe.throw("FC Update cannot be cancelled.")
 
 	def initiate_deployment(self):
 		settings = frappe.get_cached_doc("FC Settings")
