@@ -19,7 +19,7 @@ class FCVersionUpgrade(Document):
 			self.fetch_site_details()
 
 		self.validate_scheduled_datetime()
-		self.validate_duplicate_upgrade()
+		# self.validate_duplicate_upgrade()
 
 	def validate_duplicate_upgrade(self):
 		if getattr(self, "_action", None) != "submit":
