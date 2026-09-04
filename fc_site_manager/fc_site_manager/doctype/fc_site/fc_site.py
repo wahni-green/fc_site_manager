@@ -113,6 +113,28 @@ class FCSite(Document):
 		return jobs
 
 	@frappe.whitelist()
+	def fetch_apps(self):
+		frappe.only_for("FC Admin")
+		settings = self.get_fc_settings()
+
+		response = requests.post(
+			f"{settings.base_url}/api/method/press.api.client.get_list",
+			headers=settings.get_req_headers(self.fc_team),
+			json={
+				"doctype": "Site App",
+				"fields": ["name", "app", "app_title", "repository_url", "branch", "hash", "tag", "commit_message"],
+				"filters": {"parenttype": "Site", "parent": self.site_name},
+				"limit_page_length": 999,
+			},
+			timeout=30
+		)
+		apps = response.json().get("message")
+		if apps is None:
+			frappe.throw(_(f"Failed to fetch apps. {response.text}."))
+
+		return apps
+
+	@frappe.whitelist()
 	def get_agent_job_details(self, job_name):
 		frappe.only_for("FC Admin")
 		settings = self.get_fc_settings()

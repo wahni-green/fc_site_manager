@@ -155,6 +155,59 @@ frappe.ui.form.on("FC Site", {
                         dialog.show();
                     }, __("Tools")
                 );
+
+                frm.add_custom_button(
+                    __("Fetch Apps"), async function () {
+                        frappe.dom.freeze("Fetching apps...");
+                        let r;
+                        try {
+                            r = await frm.call("fetch_apps");
+                        } finally {
+                            frappe.dom.unfreeze();
+                        }
+
+                        let apps = r.message || [];
+                        if (!apps.length) {
+                            frappe.msgprint(__("No apps found."));
+                            return;
+                        }
+
+                        let rows = apps.map(app => `
+                            <tr>
+                                <td>${frappe.utils.escape_html(app.app_title || app.app)}</td>
+                                <td>${frappe.utils.escape_html(app.branch)}</td>
+                                <td>${frappe.utils.escape_html(app.tag || (app.hash || "").slice(0, 8))}</td>
+                                <td>${frappe.utils.escape_html((app.commit_message || "").split("\n")[0])}</td>
+                            </tr>
+                        `).join("");
+
+                        let dialog = new frappe.ui.Dialog({
+                            title: __("Apps"),
+                            size: "large",
+                            fields: [
+                                {
+                                    fieldname: "apps_html",
+                                    fieldtype: "HTML",
+                                    options: `
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>${__("App")}</th>
+                                                    <th>${__("Branch")}</th>
+                                                    <th>${__("Version")}</th>
+                                                    <th>${__("Last Commit")}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>${rows}</tbody>
+                                        </table>
+                                    `
+                                }
+                            ]
+                        });
+
+                        dialog.show();
+                    }, __("Tools")
+                );
             }
         }
 
