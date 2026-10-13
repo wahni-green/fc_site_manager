@@ -228,7 +228,22 @@ class FCSite(Document):
 			f"https://{self.site_name}/api/method/login",
 			json={"usr": user, "pwd": random_password}
 		)
-		user_login_response.raise_for_status()
+		try:
+			user_login_response.raise_for_status()
+		except requests.HTTPError:
+			frappe.log_error(
+				title=f"Remote login failed for {user} on {self.site_name}",
+				message=user_login_response.text,
+			)
+			try:
+				detail = user_login_response.json().get("exception")
+			except ValueError:
+				detail = None
+			detail = detail or user_login_response.text[:500]
+			frappe.throw(_("Login to {0} failed (HTTP {1}): {2}").format(
+				self.site_name, user_login_response.status_code, detail
+			))
+
 		self.add_comment(
 			"Workflow",
 			f"logged on to {self.site_name}."
