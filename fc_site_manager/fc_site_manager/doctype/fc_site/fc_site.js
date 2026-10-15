@@ -3,7 +3,11 @@
 
 frappe.ui.form.on("FC Site", {
 	refresh(frm) {
-        if (!frm.doc.login_restricted) {
+        if (frm.doc.is_external) {
+            frm.dashboard.add_comment(__("This site is not hosted on Frappe Cloud."), "blue", true);
+        }
+
+        if (!frm.is_new() && !frm.doc.login_restricted) {
             frm.add_custom_button(
                 __("Self"), async function () {
                     frappe.dom.freeze("Fetching credentials...");
@@ -23,7 +27,7 @@ frappe.ui.form.on("FC Site", {
                 }, __("Login")
             );
 
-            if (frm.doc.allow_impersonation) {
+            if (frm.doc.allow_impersonation && !frm.doc.is_external) {
                 frm.add_custom_button(
                     __("Impersonate"), async function () {
                         let dialog = new frappe.ui.Dialog({
@@ -75,7 +79,9 @@ frappe.ui.form.on("FC Site", {
                 );
             }
 
-            if (frappe.user.has_role("FC Admin")) {
+        }
+
+        if (!frm.is_new() && frappe.user.has_role("FC User")) {
                 frm.add_custom_button(
                     __("Fetch Users"), async function () {
                         frappe.dom.freeze("Fetching users...");
@@ -96,7 +102,7 @@ frappe.ui.form.on("FC Site", {
                         }
                     }, __("Tools")
                 );
-                frm.add_custom_button(
+                if (!frm.doc.is_external) frm.add_custom_button(
                     __("Fetch Agent Jobs"), async function () {
                         frappe.dom.freeze("Fetching agent jobs...");
                         let r;
@@ -165,7 +171,7 @@ frappe.ui.form.on("FC Site", {
                     }, __("Tools")
                 );
 
-                frm.add_custom_button(
+                if (!frm.doc.is_external) frm.add_custom_button(
                     __("Fetch Apps"), async function () {
                         frappe.dom.freeze("Fetching apps...");
                         let r;
@@ -217,8 +223,9 @@ frappe.ui.form.on("FC Site", {
                         dialog.show();
                     }, __("Tools")
                 );
-            }
         }
+
+        if (frm.doc.is_external) return;
 
         frm.add_custom_button(
             __("Update"),

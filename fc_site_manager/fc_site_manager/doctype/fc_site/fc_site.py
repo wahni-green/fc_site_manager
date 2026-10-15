@@ -15,7 +15,47 @@ class FCSite(Document):
 	def get_fc_settings(self):
 		return frappe.get_cached_doc("FC Settings")
 
+	def validate(self):
+		if self.is_external:
+			self.validate_external_credentials()
+		elif not self.fc_team:
+			frappe.throw(_("FC Team is required for sites hosted on Frappe Cloud."))
+
+	def validate_external_credentials(self):
+		if not self.has_value_changed("api_key") and not self.has_value_changed("api_secret") and not self.is_new():
+			return
+
+		try:
+			response = requests.get(
+				f"https://{self.site_name}/api/method/frappe.auth.get_logged_user",
+				headers=self.get_external_headers(),
+				timeout=30
+			)
+		except requests.RequestException as e:
+			frappe.throw(_("Could not reach {0}: {1}").format(self.site_name, e))
+
+		if response.status_code != 200 or response.json().get("message") != "Administrator":
+			frappe.throw(_(
+				"The API key and secret could not be verified as the Administrator of {0}."
+			).format(self.site_name))
+
+	def get_external_headers(self):
+		return {
+			"Authorization": f"token {self.api_key}:{self.get_password('api_secret')}"
+		}
+
+	def require_frappe_cloud(self):
+		if self.is_external:
+			frappe.throw(_("This action is only available for sites hosted on Frappe Cloud."))
+
+	def get_admin_auth(self):
+		"""Request kwargs authenticating as Administrator on the remote site."""
+		if self.is_external:
+			return {"headers": self.get_external_headers()}
+		return {"cookies": {"sid": self.login_as_admin()}}
+
 	def login_as_admin(self):
+		self.require_frappe_cloud()
 		if self.login_restricted:
 			frappe.throw(_("Login is restricted for this site."))
 		
@@ -45,12 +85,12 @@ class FCSite(Document):
 	@frappe.whitelist()
 	def disable_instance_users(self):
 		frappe.only_for("FC Admin")
-		sid = self.login_as_admin()
+		auth = self.get_admin_auth()
 
 		for row in self.users:
 			requests.put(
 				f"https://{self.site_name}/api/resource/User/{row.user}",
-				cookies={"sid": sid},
+				**auth,
 				json={"enabled": 0}
 			).raise_for_status()
 
@@ -64,7 +104,7 @@ class FCSite(Document):
 	def fetch_instance_users(self):
 		frappe.only_for("FC Admin")
 		settings = self.get_fc_settings()
-		sid = self.login_as_admin()
+		auth = self.get_admin_auth()
 
 		filters = settings.get_user_filters()
 		filters.append(
@@ -76,7 +116,7 @@ class FCSite(Document):
 		}
 		users = requests.get(
 			f"https://{self.site_name}/api/resource/User",
-			cookies={"sid": sid},
+			**auth,
 			json=params
 		).json()
 
@@ -92,6 +132,7 @@ class FCSite(Document):
 	@frappe.whitelist()
 	def fetch_agent_jobs(self):
 		frappe.only_for("FC Admin")
+		self.require_frappe_cloud()
 		settings = self.get_fc_settings()
 
 		response = requests.post(
@@ -115,6 +156,7 @@ class FCSite(Document):
 	@frappe.whitelist()
 	def fetch_apps(self):
 		frappe.only_for("FC Admin")
+		self.require_frappe_cloud()
 		settings = self.get_fc_settings()
 
 		response = requests.post(
@@ -137,6 +179,7 @@ class FCSite(Document):
 	@frappe.whitelist()
 	def get_agent_job_details(self, job_name):
 		frappe.only_for("FC Admin")
+		self.require_frappe_cloud()
 		settings = self.get_fc_settings()
 
 		response = requests.post(
@@ -181,9 +224,14 @@ class FCSite(Document):
 	@frappe.whitelist()
 	def login_to_site(self):
 		user = frappe.session.user
-		sid = self.login_as_admin()
+
+		if user == "Administrator" and self.is_external:
+			frappe.throw(_("Administrator login is not available for external sites."))
+
+		auth = self.get_admin_auth()
 
 		if user == "Administrator":
+			sid = auth["cookies"]["sid"]
 			self.add_comment(
 				"Workflow",
 				f"logged on to {self.site_name}."
@@ -192,20 +240,20 @@ class FCSite(Document):
 
 		settings = self.get_fc_settings()
 		if not settings.is_login_allowed(user):
-			self.disable_remote_user_if_exists(user, sid)
+			self.disable_remote_user_if_exists(user, auth)
 			frappe.throw(_(
 				"Login is restricted to users with an email domain in: {0}"
 			).format(", ".join(settings.get_allowed_login_domains())))
 
 		user_doc = requests.get(
 			f"https://{self.site_name}/api/resource/User/{user}",
-			cookies={"sid": sid}
+			**auth
 		).json()
 
 		if not user_doc.get("data"):
 			user_creation = requests.post(
 				f"https://{self.site_name}/api/resource/User",
-				cookies={"sid": sid},
+				**auth,
 				json=self.generate_user_doc(user)
 			)
 			try:
@@ -220,7 +268,7 @@ class FCSite(Document):
 		random_password = frappe.generate_hash(length=12)
 		requests.put(
 			f"https://{self.site_name}/api/resource/User/{user}",
-			cookies={"sid": sid},
+			**auth,
 			json={"enabled": 1, "new_password": random_password}
 		).raise_for_status()
 
@@ -256,6 +304,8 @@ class FCSite(Document):
 		if not self.allow_impersonation:
 			frappe.throw(_("Impersonation is not allowed for this site."))
 
+		self.require_frappe_cloud()
+
 		if impersonate_as == "Administrator":
 			frappe.throw(_("You cannot impersonate as the Administrator."))
 
@@ -271,16 +321,16 @@ class FCSite(Document):
 				"Impersonation is restricted to users with an email domain in: {0}"
 			).format(", ".join(settings.get_allowed_login_domains())))
 
-		sid = self.login_as_admin()
+		auth = self.get_admin_auth()
 		user_doc = requests.get(
 			f"https://{self.site_name}/api/resource/User/{impersonate_as}",
-			cookies={"sid": sid}
+			**auth
 		).json()
 
 		if not user_doc.get("data"):
 			user_creation = requests.post(
 				f"https://{self.site_name}/api/resource/User",
-				cookies={"sid": sid},
+				**auth,
 				json=self.generate_user_doc(impersonate_as)
 			)
 			try:
@@ -294,7 +344,7 @@ class FCSite(Document):
 
 		user_login_response = requests.post(
 			f"https://{self.site_name}/api/method/frappe.core.doctype.user.user.impersonate",
-			cookies={"sid": sid},
+			**auth,
 			json={"user": impersonate_as, "reason": reason}
 		)
 		user_login_response.raise_for_status()
@@ -304,10 +354,10 @@ class FCSite(Document):
 		)
 		return user_login_response.cookies.get_dict().get("sid")
 
-	def disable_remote_user_if_exists(self, user, sid):
+	def disable_remote_user_if_exists(self, user, auth):
 		response = requests.get(
 			f"https://{self.site_name}/api/resource/User/{user}",
-			cookies={"sid": sid},
+			**auth,
 			timeout=30
 		)
 
@@ -321,7 +371,7 @@ class FCSite(Document):
 
 		requests.put(
 			f"https://{self.site_name}/api/resource/User/{user}",
-			cookies={"sid": sid},
+			**auth,
 			json={"enabled": 0},
 			timeout=30
 		).raise_for_status()

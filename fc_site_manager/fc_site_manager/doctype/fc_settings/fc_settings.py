@@ -162,6 +162,9 @@ def sync_fc_sites(sites):
 		site = item["site"]
 		team_name = item["team"]
 
+		if frappe.db.get_value("FC Site", site.get("name"), "is_external"):
+			continue
+
 		if frappe.db.exists("FC Site", site.get("name")):
 			doc = frappe.get_doc("FC Site", site.get("name"))
 			doc.bench_id = site.get("group")

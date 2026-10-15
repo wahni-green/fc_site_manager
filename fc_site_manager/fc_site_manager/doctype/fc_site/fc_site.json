@@ -7,6 +7,7 @@
  "field_order": [
   "site_name",
   "fc_team",
+  "is_external",
   "column_break_psxn",
   "bench_id",
   "version",
@@ -14,6 +15,9 @@
   "login_restricted",
   "allow_impersonation",
   "allow_fc_user_to_update",
+  "external_section",
+  "api_key",
+  "api_secret",
   "section_break_ozns",
   "users"
  ],
@@ -32,8 +36,8 @@
    "fieldtype": "Link",
    "label": "FC Team",
    "options": "FC Team",
-   "read_only_depends_on": "fc_team",
-   "reqd": 1
+   "read_only_depends_on": "eval:doc.fc_team && !doc.is_external",
+   "mandatory_depends_on": "eval:!doc.is_external"
   },
   {
    "default": "1",
@@ -87,6 +91,36 @@
   {
    "fieldname": "column_break_psxn",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_external",
+   "fieldtype": "Check",
+   "label": "Not Hosted on Frappe Cloud",
+   "permlevel": 1,
+   "set_only_once": 1,
+   "description": "Site is hosted elsewhere. Access is via the Administrator API key and secret."
+  },
+  {
+   "fieldname": "external_section",
+   "fieldtype": "Section Break",
+   "label": "External Site Credentials",
+   "depends_on": "is_external",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Data",
+   "label": "API Key",
+   "mandatory_depends_on": "is_external",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "api_secret",
+   "fieldtype": "Password",
+   "label": "API Secret",
+   "mandatory_depends_on": "is_external",
+   "permlevel": 2
   }
  ],
  "grid_page_length": 50,
@@ -125,6 +159,12 @@
    "permlevel": 1,
    "read": 1,
    "role": "Desk User"
+  },
+  {
+   "permlevel": 2,
+   "read": 1,
+   "role": "FC Admin",
+   "write": 1
   }
  ],
  "row_format": "Dynamic",
