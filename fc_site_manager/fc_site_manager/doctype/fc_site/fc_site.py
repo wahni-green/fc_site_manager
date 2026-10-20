@@ -8,7 +8,7 @@ from urllib.parse import urlparse, parse_qs
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import escape_html
+from frappe.utils import escape_html, today
 
 
 class FCSite(Document):
@@ -269,7 +269,13 @@ class FCSite(Document):
 		requests.put(
 			f"https://{self.site_name}/api/resource/User/{user}",
 			**auth,
-			json={"enabled": 1, "new_password": random_password}
+			json={
+				"enabled": 1,
+				"new_password": random_password,
+				# set_new_password doesn't touch this, so the remote site's
+				# force_user_to_reset_password would keep prompting after login
+				"last_password_reset_date": today(),
+			}
 		).raise_for_status()
 
 		user_login_response = requests.post(
