@@ -188,7 +188,10 @@ class FCVersionUpgrade(Document):
 		if not data:
 			frappe.throw(_("App compatibility check returned no data. {0}").format(response.text))
 
-		incompatible = {d.get("app") for d in data.get("incompatible", [])}
+		incompatible = {
+			d.get("app") if isinstance(d, dict) else d
+			for d in data.get("incompatible") or []
+		}
 
 		self.set("apps", [])
 		for app in data.get("site_custom_apps", []):
@@ -201,15 +204,17 @@ class FCVersionUpgrade(Document):
 				"repository_owner": app.get("repository_owner"),
 				"current_branch": app.get("branch"),
 				"branch": app.get("branch"),
-				"incompatible": 1 if app.get("app") in incompatible else 0,
+				"incompatible": 1 if {app.get("app"), app.get("title")} & incompatible else 0,
 			})
 
 		self.can_upgrade = 1 if data.get("can_upgrade") else 0
 		if not self.can_upgrade:
-			frappe.msgprint(
-				_("This site cannot be upgraded yet. Choose a compatible branch for the incompatible apps below."),
-				indicator="orange"
-			)
+			listed = ", ".join(sorted(str(a) for a in incompatible if a))
+			if any(row.incompatible for row in self.apps):
+				msg = _("This site cannot be upgraded yet. Choose a compatible branch for the incompatible apps below.")
+			else:
+				msg = _("This site cannot be upgraded yet. These apps have no compatible version for the target release: {0}").format(listed)
+			frappe.msgprint(msg, indicator="orange")
 		else:
 			frappe.msgprint(_("App compatibility checked successfully."))
 
