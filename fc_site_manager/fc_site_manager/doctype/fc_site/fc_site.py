@@ -222,7 +222,7 @@ class FCSite(Document):
 		frappe.msgprint(details, title=_(f"Agent Job: {job_name}"), wide=True)
 
 	@frappe.whitelist()
-	def login_to_site(self):
+	def login_to_site(self, ticket=None):
 		user = frappe.session.user
 
 		if user == "Administrator" and self.is_external:
@@ -232,10 +232,7 @@ class FCSite(Document):
 
 		if user == "Administrator":
 			sid = auth["cookies"]["sid"]
-			self.add_comment(
-				"Workflow",
-				f"logged on to {self.site_name}."
-			)
+			self.log_login(ticket)
 			return sid
 
 		settings = self.get_fc_settings()
@@ -298,12 +295,15 @@ class FCSite(Document):
 				self.site_name, user_login_response.status_code, detail
 			))
 
-		self.add_comment(
-			"Workflow",
-			f"logged on to {self.site_name}."
-		)
+		self.log_login(ticket)
 
 		return user_login_response.cookies.get_dict().get("sid")
+
+	def log_login(self, ticket=None):
+		message = f"logged on to {self.site_name}."
+		if ticket:
+			message += f" Ticket: {ticket}"
+		self.add_comment("Workflow", message)
 
 	@frappe.whitelist()
 	def impersonate_as_user(self, impersonate_as, reason):
@@ -403,3 +403,60 @@ class FCSite(Document):
             },
 		]
 		return user
+
+
+TICKET_ROLES = ["FC User", "FC Admin", "Agent"]
+
+
+def get_ticket_customer(ticket):
+	frappe.has_permission("HD Ticket", "read", ticket, throw=True)
+	frappe.only_for(TICKET_ROLES)
+	return frappe.db.get_value("HD Ticket", ticket, "customer")
+
+
+@frappe.whitelist()
+def get_sites_for_ticket(ticket):
+	"""Login-enabled FC Sites linked to the customer of an HD Ticket."""
+	customer = get_ticket_customer(ticket)
+	if not customer:
+		return []
+
+	return frappe.get_all(
+		"FC Site",
+		filters={"hd_customer": customer, "login_restricted": 0},
+		pluck="name",
+	)
+
+
+@frappe.whitelist()
+def login_to_site_from_ticket(ticket, site):
+	customer = get_ticket_customer(ticket)
+	site_doc = frappe.get_doc("FC Site", site)
+
+	if not customer or site_doc.hd_customer != customer:
+		frappe.throw(_("{0} is not linked to the customer of this ticket.").format(site))
+
+	return site_doc.login_to_site(ticket=ticket)
+
+
+@frappe.whitelist()
+def get_unlinked_sites():
+	frappe.only_for(TICKET_ROLES)
+	return frappe.get_all("FC Site", filters={"hd_customer": ["is", "not set"]}, pluck="name")
+
+
+@frappe.whitelist()
+def link_site_to_ticket_customer(ticket, site):
+	customer = get_ticket_customer(ticket)
+	if not customer:
+		frappe.throw(_("Ticket {0} has no customer.").format(ticket))
+
+	linked_customer = frappe.db.get_value("FC Site", site, "hd_customer")
+	if linked_customer:
+		frappe.throw(_("{0} is already linked to {1}.").format(site, linked_customer))
+
+	frappe.db.set_value("FC Site", site, "hd_customer", customer)
+	frappe.get_doc("FC Site", site).add_comment(
+		"Workflow",
+		f"Linked to customer {customer} from ticket {ticket}."
+	)

@@ -230,3 +230,5 @@ scheduler_events = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+
+doctype_js = {"HD Ticket": "public/js/hd_ticket.js"}
