@@ -145,6 +145,7 @@
  "links": [],
  "modified": "2026-01-27 10:40:08.070556",
  "modified_by": "Administrator",
+ "icon": "refresh-cw",
  "module": "FC Site Manager",
  "name": "FC Update",
  "owner": "Administrator",

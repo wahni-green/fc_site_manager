@@ -11,15 +11,14 @@ app_license = "agpl-3.0"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "fc_site_manager",
-# 		"logo": "/assets/fc_site_manager/logo.png",
-# 		"title": "FC Site Manager",
-# 		"route": "/fc_site_manager",
-# 		"has_permission": "fc_site_manager.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "fc_site_manager",
+		"logo": "/assets/fc_site_manager/images/fcsm-logo.webp",
+		"title": "FC Site Manager",
+		"route": "/desk/fc-site",
+	}
+]
 
 # Includes in <head>
 # ------------------

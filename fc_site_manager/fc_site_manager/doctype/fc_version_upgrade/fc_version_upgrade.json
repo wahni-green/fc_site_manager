@@ -194,6 +194,7 @@
  "links": [],
  "modified": "2026-08-04 10:00:00.000000",
  "modified_by": "Administrator",
+ "icon": "circle-arrow-up",
  "module": "FC Site Manager",
  "name": "FC Version Upgrade",
  "owner": "Administrator",
