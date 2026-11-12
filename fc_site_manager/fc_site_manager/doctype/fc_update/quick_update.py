@@ -9,6 +9,8 @@ from frappe.utils.data import cint, now_datetime
 
 from fc_site_manager.fc_site_manager.doctype.fc_update.release_info import ReleaseInfo
 
+ADMIN_ROLE = "FC Admin"
+
 # Dialog choice -> hour of day (system time zone).
 SLOT_HOURS = {"night": 20, "tonight": 2, "early_morning": 4}
 
@@ -57,14 +59,18 @@ class QuickUpdate:
 			"sites": [self._site_row(s, selected_sites) for s in info["sites"]],
 		})
 		doc.insert()
+		return {"name": doc.name, "submitted": int(self._submit(doc))}
+
+	def _submit(self, doc):
+		"""Only FC Admin submits. Others get a draft. Returns whether it was submitted."""
 		if not self._can_submit():
-			return {"name": doc.name, "submitted": 0}
+			return False
 
 		doc.submit()
-		return {"name": doc.name, "submitted": 1}
+		return True
 
 	def _can_submit(self):
-		return frappe.has_permission("FC Update", "submit")
+		return ADMIN_ROLE in frappe.get_roles() and frappe.has_permission("FC Update", "submit")
 
 	def _fetch(self):
 		return ReleaseInfo(self.site.bench_id, self.site.fc_team).fetch()

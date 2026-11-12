@@ -79,27 +79,48 @@ class TestQuickUpdateValidation(UnitTestCase):
 
 
 class TestQuickUpdateCreate(UnitTestCase):
-	def create(self, can_submit):
+	def create(self, submitted):
 		obj = quick_update()
 		obj.site.update(is_external=0)
 		doc = MagicMock()
 		doc.name = "FCU-1"
 		with patch.object(obj, "_fetch", return_value=FETCHED), \
-			patch.object(obj, "_can_submit", return_value=can_submit), \
+			patch.object(obj, "_submit", return_value=submitted), \
 			patch.object(frappe, "get_doc", return_value=doc):
 			result = obj.create(["frappe"], [{"site": "a.example.com", "update_site": 1}], "now")
 		return result, doc
 
-	def test_submits_when_allowed(self):
-		result, doc = self.create(can_submit=True)
-		doc.submit.assert_called_once()
+	def test_reports_submitted(self):
+		result, doc = self.create(submitted=True)
+		doc.insert.assert_called_once()
 		self.assertEqual(result, {"name": "FCU-1", "submitted": 1})
 
-	def test_leaves_draft_when_not_allowed(self):
-		result, doc = self.create(can_submit=False)
-		doc.insert.assert_called_once()
-		doc.submit.assert_not_called()
+	def test_reports_draft(self):
+		result, _ = self.create(submitted=False)
 		self.assertEqual(result, {"name": "FCU-1", "submitted": 0})
+
+
+class TestQuickUpdateSubmit(UnitTestCase):
+	def submit(self, roles, has_permission=True):
+		doc = MagicMock()
+		with patch.object(frappe, "get_roles", return_value=roles), \
+			patch.object(frappe, "has_permission", return_value=has_permission):
+			return quick_update()._submit(doc), doc
+
+	def test_fc_admin_submits(self):
+		submitted, doc = self.submit(["FC User", "FC Admin"])
+		self.assertTrue(submitted)
+		doc.submit.assert_called_once()
+
+	def test_fc_user_gets_draft(self):
+		submitted, doc = self.submit(["FC User"])
+		self.assertFalse(submitted)
+		doc.submit.assert_not_called()
+
+	def test_admin_without_submit_permission_gets_draft(self):
+		submitted, doc = self.submit(["FC Admin"], has_permission=False)
+		self.assertFalse(submitted)
+		doc.submit.assert_not_called()
 
 
 class TestPressError(UnitTestCase):

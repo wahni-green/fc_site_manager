@@ -180,9 +180,6 @@ fc_site_manager.QuickUpdateDialog = class QuickUpdateDialog {
 		this.selected_apps.filter(a => a.hash === a.current_hash).forEach(a =>
 			warnings.push(__("{0} is already at the target version.", [frappe.utils.escape_html(a.app)]))
 		);
-		this.selected_sites.filter(s => !s.allow_fc_user_to_update).forEach(s =>
-			warnings.push(__("{0} does not allow FC users to update.", [frappe.utils.escape_html(s.site)]))
-		);
 
 		if (this.dialog.get_value("when") === "custom") {
 			const at = this.dialog.get_value("scheduled_datetime");
@@ -234,7 +231,7 @@ fc_site_manager.QuickUpdateDialog = class QuickUpdateDialog {
 			this.dialog.hide();
 			if (!r.message.submitted) {
 				frappe.show_alert({
-					message: __("Saved as draft. Ask an FC Admin to submit it."),
+					message: __("Saved as draft. An FC Admin needs to submit it."),
 					indicator: "orange",
 				});
 			}
