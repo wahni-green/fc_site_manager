@@ -9,7 +9,8 @@ from frappe.utils.data import cint, now_datetime
 
 from fc_site_manager.fc_site_manager.doctype.fc_update.release_info import ReleaseInfo
 
-NIGHT_HOUR = 2
+# Dialog choice -> hour of day (system time zone).
+SLOT_HOURS = {"night": 20, "tonight": 2, "early_morning": 4}
 
 
 class QuickUpdate:
@@ -37,7 +38,7 @@ class QuickUpdate:
 		return {
 			"apps": info["apps"],
 			"sites": info["sites"],
-			"night_slot": str(night_slot()),
+			"can_submit": self._can_submit(),
 		}
 
 	def create(self, apps, sites, when, scheduled_datetime=None):
@@ -56,8 +57,14 @@ class QuickUpdate:
 			"sites": [self._site_row(s, selected_sites) for s in info["sites"]],
 		})
 		doc.insert()
+		if not self._can_submit():
+			return {"name": doc.name, "submitted": 0}
+
 		doc.submit()
-		return doc.name
+		return {"name": doc.name, "submitted": 1}
+
+	def _can_submit(self):
+		return frappe.has_permission("FC Update", "submit")
 
 	def _fetch(self):
 		return ReleaseInfo(self.site.bench_id, self.site.fc_team).fetch()
@@ -102,8 +109,8 @@ def resolve_schedule(when, scheduled_datetime=None):
 	if when == "now":
 		return None
 
-	if when == "tonight":
-		return night_slot()
+	if when in SLOT_HOURS:
+		return next_slot(SLOT_HOURS[when])
 
 	if when == "custom" and scheduled_datetime:
 		return scheduled_datetime
@@ -111,8 +118,8 @@ def resolve_schedule(when, scheduled_datetime=None):
 	frappe.throw(_("Choose when to update."))
 
 
-def night_slot():
-	"""Next 2 AM in the system time zone."""
+def next_slot(hour):
+	"""Next occurrence of `hour`:00 in the system time zone."""
 	now = now_datetime()
-	slot = now.replace(hour=NIGHT_HOUR, minute=0, second=0, microsecond=0)
+	slot = now.replace(hour=hour, minute=0, second=0, microsecond=0)
 	return slot if slot > now else slot + timedelta(days=1)

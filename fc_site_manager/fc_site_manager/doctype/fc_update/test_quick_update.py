@@ -2,7 +2,7 @@
 # See license.txt
 
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.tests import UnitTestCase
@@ -10,7 +10,7 @@ from frappe.tests import UnitTestCase
 from fc_site_manager.fc_site_manager.doctype.fc_update.fc_update import get_press_error
 from fc_site_manager.fc_site_manager.doctype.fc_update.quick_update import (
 	QuickUpdate,
-	night_slot,
+	next_slot,
 	resolve_schedule,
 )
 
@@ -30,16 +30,22 @@ def quick_update():
 	return obj
 
 
-class TestNightSlot(UnitTestCase):
+class TestNextSlot(UnitTestCase):
 	def test_before_two_am_uses_today(self):
 		with patch("fc_site_manager.fc_site_manager.doctype.fc_update.quick_update.now_datetime",
 				return_value=datetime(2026, 11, 12, 1, 0)):
-			self.assertEqual(night_slot(), datetime(2026, 11, 12, 2, 0))
+			self.assertEqual(next_slot(2), datetime(2026, 11, 12, 2, 0))
 
 	def test_after_two_am_uses_tomorrow(self):
 		with patch("fc_site_manager.fc_site_manager.doctype.fc_update.quick_update.now_datetime",
 				return_value=datetime(2026, 11, 12, 14, 30)):
-			self.assertEqual(night_slot(), datetime(2026, 11, 13, 2, 0))
+			self.assertEqual(next_slot(2), datetime(2026, 11, 13, 2, 0))
+
+	def test_resolve_named_slots(self):
+		with patch("fc_site_manager.fc_site_manager.doctype.fc_update.quick_update.now_datetime",
+				return_value=datetime(2026, 11, 12, 10, 0)):
+			self.assertEqual(resolve_schedule("night"), datetime(2026, 11, 12, 20, 0))
+			self.assertEqual(resolve_schedule("early_morning"), datetime(2026, 11, 13, 4, 0))
 
 	def test_resolve_schedule(self):
 		self.assertIsNone(resolve_schedule("now"))
@@ -70,6 +76,30 @@ class TestQuickUpdateValidation(UnitTestCase):
 		row = quick_update()._site_row(FETCHED["sites"][0], selected)
 		self.assertEqual((row["update_site"], row["skip_backups"]), (1, 1))
 		self.assertEqual(quick_update()._site_row(FETCHED["sites"][1], selected)["update_site"], 0)
+
+
+class TestQuickUpdateCreate(UnitTestCase):
+	def create(self, can_submit):
+		obj = quick_update()
+		obj.site.update(is_external=0)
+		doc = MagicMock()
+		doc.name = "FCU-1"
+		with patch.object(obj, "_fetch", return_value=FETCHED), \
+			patch.object(obj, "_can_submit", return_value=can_submit), \
+			patch.object(frappe, "get_doc", return_value=doc):
+			result = obj.create(["frappe"], [{"site": "a.example.com", "update_site": 1}], "now")
+		return result, doc
+
+	def test_submits_when_allowed(self):
+		result, doc = self.create(can_submit=True)
+		doc.submit.assert_called_once()
+		self.assertEqual(result, {"name": "FCU-1", "submitted": 1})
+
+	def test_leaves_draft_when_not_allowed(self):
+		result, doc = self.create(can_submit=False)
+		doc.insert.assert_called_once()
+		doc.submit.assert_not_called()
+		self.assertEqual(result, {"name": "FCU-1", "submitted": 0})
 
 
 class TestPressError(UnitTestCase):

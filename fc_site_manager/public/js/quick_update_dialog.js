@@ -16,7 +16,7 @@ fc_site_manager.QuickUpdateDialog = class QuickUpdateDialog {
 			const r = await frappe.call({ method: `${API}.get_update_options`, args: { site: this.site } });
 			this.apps = r.message.apps;
 			this.sites = r.message.sites;
-			this.night_slot = r.message.night_slot;
+			this.can_submit = r.message.can_submit;
 		} finally {
 			frappe.dom.unfreeze();
 		}
@@ -39,7 +39,9 @@ fc_site_manager.QuickUpdateDialog = class QuickUpdateDialog {
 					label: __("When"),
 					options: [
 						{ value: "now", label: __("Now") },
-						{ value: "tonight", label: __("Tonight at 2:00 AM") },
+						{ value: "night", label: __("Night (8:00 PM)") },
+						{ value: "tonight", label: __("Tonight (2:00 AM)") },
+						{ value: "early_morning", label: __("Early Morning (4:00 AM)") },
 						{ value: "custom", label: __("Custom time") },
 					],
 					default: "now",
@@ -55,7 +57,7 @@ fc_site_manager.QuickUpdateDialog = class QuickUpdateDialog {
 				},
 				{ fieldtype: "HTML", fieldname: "warnings_html" },
 			],
-			primary_action_label: __("Update"),
+			primary_action_label: this.primary_label(),
 			primary_action: () => this.submit(),
 		});
 	}
@@ -158,11 +160,16 @@ fc_site_manager.QuickUpdateDialog = class QuickUpdateDialog {
 			warnings.map(w => `<div class="alert alert-warning py-2 mb-2">${w}</div>`).join("")
 		);
 
-		const label = this.selected_apps.length && this.selected_sites.length
-			? __("Update {0} app(s) on {1} site(s)", [this.selected_apps.length, this.selected_sites.length])
-			: __("Update");
-		this.dialog.set_primary_action(label, () => this.submit());
+		this.dialog.set_primary_action(this.primary_label(), () => this.submit());
 		this.dialog.get_primary_btn().prop("disabled", !this.is_valid());
+	}
+
+	primary_label() {
+		if (!this.can_submit) return __("Save as Draft");
+
+		const apps = this.selected_apps.length;
+		const sites = this.selected_sites.length;
+		return apps && sites ? __("Update {0} app(s) on {1} site(s)", [apps, sites]) : __("Update");
 	}
 
 	get_warnings() {
@@ -195,7 +202,7 @@ fc_site_manager.QuickUpdateDialog = class QuickUpdateDialog {
 
 	submit() {
 		if (!this.is_valid()) return;
-		if (this.selected_sites.length > 1) {
+		if (this.can_submit && this.selected_sites.length > 1) {
 			frappe.confirm(
 				__("This updates {0} sites. Continue?", [this.selected_sites.length]),
 				() => this.create()
@@ -225,7 +232,13 @@ fc_site_manager.QuickUpdateDialog = class QuickUpdateDialog {
 				},
 			});
 			this.dialog.hide();
-			frappe.set_route("Form", "FC Update", r.message);
+			if (!r.message.submitted) {
+				frappe.show_alert({
+					message: __("Saved as draft. Ask an FC Admin to submit it."),
+					indicator: "orange",
+				});
+			}
+			frappe.set_route("Form", "FC Update", r.message.name);
 		} finally {
 			frappe.dom.unfreeze();
 		}
