@@ -8,10 +8,13 @@ from frappe import _
 from frappe.utils.data import cint, escape_html, get_datetime, now_datetime, format_datetime
 from frappe.model.document import Document
 
+from fc_site_manager.fc_site_manager.doctype.fc_update.quick_update import QuickUpdate
+from fc_site_manager.fc_site_manager.doctype.fc_update.release_info import ReleaseInfo
+
 
 class FCUpdate(Document):
 	def validate(self):
-		if self.is_new():
+		if self.is_new() and not self.apps:
 			self.get_release_groups()
 
 		sites_for_update = [str(d.site).split(".")[0] for d in self.sites if d.update_site]
@@ -110,7 +113,10 @@ class FCUpdate(Document):
 				"FC Update Deployment Failed",
 				response.text,
 			)
-			frappe.throw("Failed to initiate deployment.")
+			frappe.throw(
+				_("Failed to initiate deployment. {0}").format(get_press_error(data)),
+				title=_("Frappe Cloud Rejected the Update"),
+			)
 
 		self.db_set("deployment_status", "Initiated")
 		frappe.msgprint("Deployment initiated successfully.")
@@ -235,73 +241,10 @@ class FCUpdate(Document):
 
 	@frappe.whitelist()
 	def get_release_groups(self):
-		settings = frappe.get_cached_doc("FC Settings")
-		headers = settings.get_req_headers(self.fc_team)
-		response = requests.post(
-			f"{settings.base_url}/api/method/press.api.client.get",
-			headers=headers,
-			json={"doctype": "Release Group", "name": self.bench_id}
-		)
-		data = response.json().get("message")
-
-		if not data:
-			frappe.throw(
-				f"Release Group not found. {response.text}."
-			)
-			return
-
-		if data.get("status") != "Active":
-			frappe.throw("The Release Group is not active.")
-			return
-
-		if not data.get("deploy_information"):
-			frappe.throw("No deployable updates found.")
-			return
-
-		deploy_info = data["deploy_information"]
-		if not deploy_info.get("update_available"):
-			frappe.throw("No updates available.")
-			return
-
-		if deploy_info.get("deploy_in_progress"):
-			frappe.throw("Another deploy is already in progress.")
-			return
-
-		self.set("sites", [])
-		for site in deploy_info.get("sites"):
-			self.append(
-				"sites",
-				{
-					"site": site.get("name"),
-					"bench": site.get("bench"),
-					"server": site.get("server"),
-					"skip_backups": cint(site.get("skip_backups")),
-					"skip_failing_patches": cint(site.get("skip_failing_patches")),
-				}
-			)
-
-		self.set("apps", [])
-		for app in deploy_info.get("apps"):
-			release = [
-				d for d in app.get("releases", [])
-				if d.get("name") == app.get("next_release")
-			]
-			release = release[0] if release else {}
-
-			self.append(
-				"apps",
-				{
-					"app": app.get("app"),
-					"release": app.get("next_release"),
-					"source": release.get("source"),
-					"hash": release.get("hash"),
-					"current_hash": app.get("current_hash"),
-					"repository_url": app.get("repository_url"),
-					"update_available": cint(app.get("update_available"))
-				}
-			)
-
-		frappe.msgprint("Release groups fetched successfully.")
+		info = ReleaseInfo(self.bench_id, self.fc_team).fetch()
+		self.set("sites", info["sites"])
+		self.set("apps", [{**app, "deploy": app["update_available"]} for app in info["apps"]])
+		frappe.msgprint(_("Release groups fetched successfully."))
 
 	@frappe.whitelist()
 	def get_app_latest_update(self, app_name):
@@ -315,3 +258,30 @@ class FCUpdate(Document):
 
 		frappe.msgprint(f"Latest update for {app_name} fetched successfully.")
 		self.get_release_groups()
+
+
+@frappe.whitelist()
+def get_update_options(site: str):
+	return QuickUpdate(site).options()
+
+
+@frappe.whitelist()
+def create_update(site: str, apps: str, sites: str, when: str, scheduled_datetime: str | None = None):
+	"""Create and submit an FC Update from the quick update dialog."""
+	return QuickUpdate(site).create(
+		frappe.parse_json(apps), frappe.parse_json(sites), when, scheduled_datetime
+	)
+
+
+def get_press_error(data):
+	"""Readable reason from a failed Press API response."""
+	messages = []
+	for raw in frappe.parse_json(data.get("_server_messages") or "[]"):
+		message = frappe.parse_json(raw).get("message")
+		if message:
+			messages.append(escape_html(message))
+
+	if messages:
+		return "<br>".join(messages)
+
+	return escape_html(str(data.get("exception") or data.get("exc_type")))

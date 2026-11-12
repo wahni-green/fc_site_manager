@@ -9,6 +9,9 @@ frappe.ui.form.on("FC Update", {
                 frm.dirty();
             }, __("Actions"));
 
+            frm.add_custom_button(__("Select All Updatable Apps"), () => set_app_selection(frm, 1), __("Actions"));
+            frm.add_custom_button(__("Unselect All Apps"), () => set_app_selection(frm, 0), __("Actions"));
+
             frm.add_custom_button(__("Fetch Latest Update for App"), async function() {
                 let dialog = new frappe.ui.Dialog({
                     title: __("Fetch Latest Update for App"),
@@ -71,3 +74,10 @@ frappe.ui.form.on("FC Update App", {
         window.open(diff_url, '_blank');
     }
 });
+
+
+function set_app_selection(frm, deploy) {
+    (frm.doc.apps || []).forEach(row => {
+        frappe.model.set_value(row.doctype, row.name, "deploy", row.update_available ? deploy : 0);
+    });
+}

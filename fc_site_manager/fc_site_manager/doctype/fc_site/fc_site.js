@@ -230,7 +230,8 @@ frappe.ui.form.on("FC Site", {
         frm.add_custom_button(
             __("Update"),
             async function () {
-                frappe.new_doc("FC Update", { "bench_id": frm.doc.bench_id, "fc_team": frm.doc.fc_team });
+                await frappe.require("/assets/fc_site_manager/js/quick_update_dialog.js");
+                new fc_site_manager.QuickUpdateDialog(frm.doc.name).open();
             }, __("Tools")
         );
 
